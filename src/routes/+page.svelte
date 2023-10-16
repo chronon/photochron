@@ -4,10 +4,14 @@
   let variant = "default";
 </script>
 
-<h1 class="text-4xl font-bold underline">chrononagram</h1>
-
-<div>
+<div class="flex flex-col items-center">
   {#each images as image}
-    <img loading="lazy" src="{base}/{image.id}/{variant}" alt={image.caption} />
+    <div class="flex justify-center w-full mt-8 md:p-8 rounded-lg bg-gray-50">
+      <img
+        loading="lazy"
+        src="{base}/{image.id}/{variant}"
+        alt={image.caption}
+      />
+    </div>
   {/each}
 </div>
