@@ -1,11 +1,16 @@
 <script>
+  import InfiniteScroll from "$lib/InfiniteScroll.svelte";
   import images from "$lib/images.json";
-  let base = "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g";
-  let variant = "default";
+  const base = "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g";
+  const variant = "default";
+
+  let increment = 2;
+  let count = increment;
+  const loadMore = () => (count += increment);
 </script>
 
 <div class="flex flex-col items-center">
-  {#each images as image}
+  {#each images.slice(0, count) as image}
     <div class="flex justify-center w-full mt-8 md:p-8 rounded-lg bg-gray-50">
       <img
         loading="lazy"
@@ -14,4 +19,9 @@
       />
     </div>
   {/each}
+  <InfiniteScroll
+    hasMore={count < images.length}
+    threshold={200}
+    on:loadMore={loadMore}
+  />
 </div>
