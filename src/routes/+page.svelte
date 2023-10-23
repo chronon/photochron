@@ -35,9 +35,9 @@
     />
     <div class="p-2">
       {#if image.caption}
-        <p class="leading-tight text-lg mb-2">{image.caption}</p>
+        <p class="leading-tight mb-2">{image.caption}</p>
       {/if}
-      <p class="text-base text-gray-400">
+      <p class="text-sm text-gray-400">
         Posted {new Date(image.uploaded).toLocaleString()}
       </p>
     </div>
