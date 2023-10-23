@@ -1,5 +1,5 @@
-<script>
-  import images from "$lib/images.json";
+<script lang="ts">
+  import type { PageServerData } from "./$types";
   import InfiniteScroll from "$lib/InfiniteScroll.svelte";
 
   import {
@@ -9,12 +9,14 @@
     PUBLIC_USER_AVATAR,
   } from "$env/static/public";
 
+  export let data: PageServerData;
+
   let increment = 2;
   let count = increment;
   const loadMore = () => (count += increment);
 </script>
 
-{#each images.slice(0, count) as image}
+{#each data.images.slice(0, count) as image}
   <div class="mb-10 max-w-5xl rounded-lg mx-auto">
     <div class="p-2 flex items-center">
       <img
@@ -43,7 +45,7 @@
 {/each}
 
 <InfiniteScroll
-  hasMore={count < images.length}
+  hasMore={count < data.images.length}
   threshold={200}
   on:loadMore={loadMore}
 />
