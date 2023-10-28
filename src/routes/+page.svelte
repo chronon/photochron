@@ -17,7 +17,7 @@
 </script>
 
 {#each data.images.slice(0, count) as image}
-  <div class="mb-10 max-w-5xl rounded-lg mx-auto">
+  <div class="mb-8 max-w-5xl rounded-lg mx-auto">
     <div class="p-2 flex items-center">
       <img
         loading="lazy"
@@ -28,13 +28,14 @@
       <p class="font-semibold">{PUBLIC_USER_NAME}</p>
     </div>
     <div
-      class="bg-gray-50 rounded-lg h-0 pt-[75%] relative bg-[url('/loading.gif')] bg-no-repeat bg-center bg-[size:100px]"
+      class="bg-gray-50 rounded-lg bg-[url('/loading.gif')] bg-no-repeat bg-center bg-[size:100px]"
+      style="min-height: 30vh"
     >
       <img
         loading="lazy"
         src="{PUBLIC_IMG_BASE}/{image.id}/{PUBLIC_IMG_VARIANT}"
         alt={image.caption}
-        class="absolute top-0 left-[50%] translate-x-[-50%]"
+        class="mx-auto"
       />
     </div>
     <div class="p-2">
