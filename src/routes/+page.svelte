@@ -27,12 +27,16 @@
       />
       <p class="font-semibold">{PUBLIC_USER_NAME}</p>
     </div>
-    <img
-      loading="lazy"
-      src="{PUBLIC_IMG_BASE}/{image.id}/{PUBLIC_IMG_VARIANT}"
-      alt={image.caption}
-      class="mx-auto"
-    />
+    <div
+      class="bg-gray-50 rounded-lg h-0 pt-[75%] relative bg-[url('/loading.gif')] bg-no-repeat bg-center bg-[size:100px]"
+    >
+      <img
+        loading="lazy"
+        src="{PUBLIC_IMG_BASE}/{image.id}/{PUBLIC_IMG_VARIANT}"
+        alt={image.caption}
+        class="absolute top-0 left-[50%] translate-x-[-50%]"
+      />
+    </div>
     <div class="p-2">
       {#if image.caption}
         <p class="leading-tight mb-2">{image.caption}</p>
