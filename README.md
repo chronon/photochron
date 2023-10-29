@@ -15,3 +15,9 @@ git push -u origin main
 ```
 pnpm install
 ```
+
+## Updating from upstream
+
+```
+git pull upstream main && git push origin main
+```

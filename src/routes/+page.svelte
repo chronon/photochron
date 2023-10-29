@@ -28,8 +28,8 @@
       <p class="font-semibold">{PUBLIC_USER_NAME}</p>
     </div>
     <div
-      class="bg-gray-50 rounded-lg bg-[url('/loading.gif')] bg-no-repeat bg-center bg-[size:100px]"
-      style="min-height: 30vh"
+      class="bg-gray-50 rounded-lg bg-[url('/loading.gif')] bg-no-repeat bg-center bg-[size:50px]"
+      style="min-height: 35vh"
     >
       <img
         loading="lazy"
