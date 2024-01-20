@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  PUBLIC_IMG_BASE: 'https://imagedelivery.net/unique-hash'
+  PUBLIC_IMG_SOURCE: 'https://api.example.com/data/user/images.json'
+  PUBLIC_IMG_VARIANT: 'default'
+  PUBLIC_USER_AVATAR: 'https://imagedelivery.net/avatar-path'
+  PUBLIC_USER_NAME: 'username'
+
+jobs:
+  check-test:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.41.0-jammy
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check
+        run: pnpm run check
+
+      # - name: Test
+      #   run: pnpm run test
