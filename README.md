@@ -23,3 +23,9 @@ pnpm install
 ```
 git pull upstream main && git push origin main
 ```
+
+## Updating dependencies
+
+1. Update as needed.
+2. Push the updated branch to `origin`, create a PR.
+3. After merge, `git push upstream main`.
