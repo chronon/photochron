@@ -9,10 +9,14 @@
 		PUBLIC_USER_AVATAR
 	} from '$env/static/public';
 
-	export let data: PageServerData;
+	interface Props {
+		data: PageServerData;
+	}
+
+	let { data }: Props = $props();
 
 	let increment = 2;
-	let count = increment;
+	let count = $state(increment);
 	const loadMore = () => (count += increment);
 </script>
 
