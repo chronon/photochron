@@ -1,5 +1,10 @@
-<script>
+<script lang="ts">
 	import { PUBLIC_USER_NAME, PUBLIC_USER_AVATAR } from '$env/static/public';
+	interface Props {
+		children?: import('svelte').Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 <svelte:head>
@@ -24,5 +29,5 @@
 			</div>
 		</div>
 	</div>
-	<slot />
+	{@render children?.()}
 </div>

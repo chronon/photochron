@@ -1,15 +1,19 @@
 <script lang="ts">
 	import { onMount, createEventDispatcher } from 'svelte';
 
-	export let threshold = 100;
-	export let hasMore = true;
+	interface Props {
+		threshold?: number;
+		hasMore?: boolean;
+	}
+
+	let { threshold = 100, hasMore = true }: Props = $props();
 	const dispatch = createEventDispatcher();
 
-	let scrollElement: HTMLDivElement;
+	let scrollElement: HTMLDivElement | null = $state(null);
 
 	onMount(() => {
 		let observer = new IntersectionObserver(observerCallback);
-		observer.observe(scrollElement);
+		observer.observe(scrollElement!);
 
 		function observerCallback(entries: IntersectionObserverEntry[]) {
 			entries.forEach((entry) => {
@@ -18,8 +22,8 @@
 				}
 			});
 		}
-		return () => observer.unobserve(scrollElement);
+		return () => observer.unobserve(scrollElement!);
 	});
 </script>
 
-<div bind:this={scrollElement} style="width:0px; position: relative; top: -{threshold}px;" />
+<div bind:this={scrollElement} style="width:0px; position: relative; top: -{threshold}px;"></div>
