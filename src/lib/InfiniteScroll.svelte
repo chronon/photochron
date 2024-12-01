@@ -9,11 +9,11 @@
 	let { threshold = 100, hasMore = true }: Props = $props();
 	const dispatch = createEventDispatcher();
 
-	let scrollElement: HTMLDivElement = $state();
+	let scrollElement: HTMLDivElement | null = $state(null);
 
 	onMount(() => {
 		let observer = new IntersectionObserver(observerCallback);
-		observer.observe(scrollElement);
+		observer.observe(scrollElement!);
 
 		function observerCallback(entries: IntersectionObserverEntry[]) {
 			entries.forEach((entry) => {
@@ -22,7 +22,7 @@
 				}
 			});
 		}
-		return () => observer.unobserve(scrollElement);
+		return () => observer.unobserve(scrollElement!);
 	});
 </script>
 
