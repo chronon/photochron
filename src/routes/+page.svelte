@@ -20,7 +20,7 @@
 	const loadMore = () => (count += increment);
 </script>
 
-{#each data.images.slice(0, count) as image}
+{#each data.images.slice(0, count) as image (image.id)}
 	<div class="mx-auto mb-8 max-w-5xl rounded-lg">
 		<div class="flex items-center p-2">
 			<img
