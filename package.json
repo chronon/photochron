@@ -13,7 +13,9 @@
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
 		"test": "pnpm test:unit --run && pnpm test:e2e",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"deploy": "pnpm build && wrangler deploy",
+		"deploy:preview": "pnpm build && wrangler deploy --dry-run"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.35.0",
