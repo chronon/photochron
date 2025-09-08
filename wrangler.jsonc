@@ -4,13 +4,6 @@
 	"main": ".svelte-kit/cloudflare/_worker.js",
 	"compatibility_date": "2025-09-06",
 	"compatibility_flags": ["nodejs_als"],
-	"vars": {
-		"PUBLIC_IMG_BASE": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g",
-		"PUBLIC_IMG_SOURCE": "https://api.chronon.dev/data/silklag/images.json",
-		"PUBLIC_IMG_VARIANT": "default",
-		"PUBLIC_USER_AVATAR": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g/ad285229-8231-4dac-e7d4-86e361718f00/default",
-		"PUBLIC_USER_NAME": "silklag"
-	},
 	"routes": [
 		{
 			"pattern": "silklag.com",
