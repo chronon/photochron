@@ -1,11 +1,15 @@
 import type { PageServerLoad } from './$types';
-import { PUBLIC_IMG_SOURCE } from '$env/static/public';
+import { getConfigForDomain } from '$lib/config';
 
-const imgSource: string = PUBLIC_IMG_SOURCE;
+export const load: PageServerLoad = async ({ url, platform }) => {
+	const config = getConfigForDomain(
+		url.hostname,
+		(platform as { env?: Record<string, string> })?.env
+	);
 
-export const load: PageServerLoad = async () => {
 	return {
-		images: await fetch(imgSource, {
+		config,
+		images: await fetch(config.imgSource, {
 			method: 'GET'
 		}).then((response) => response.json())
 	};
