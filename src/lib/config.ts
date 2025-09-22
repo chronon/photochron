@@ -1,16 +1,31 @@
-import {
-	PUBLIC_IMG_BASE,
-	PUBLIC_API_BASE,
-	PUBLIC_IMG_VARIANT,
-	PUBLIC_USER_NAME
-} from '$env/static/public';
+import { PUBLIC_API_BASE, PUBLIC_USER_NAME } from '$env/static/public';
 
 export interface UserConfig {
 	imgBase: string;
-	imgSource: string;
 	imgVariant: string;
 	userAvatar: string;
 	userName: string;
+}
+
+export interface APIResponse {
+	user: {
+		name: string;
+		avatar: {
+			id: string;
+			variant: string;
+		};
+	};
+	config: {
+		imageBase: string;
+		imageVariant: string;
+	};
+	images: Array<{
+		id: string;
+		name: string;
+		caption?: string;
+		taken: string;
+		uploaded: string;
+	}>;
 }
 
 function extractUserFromDomain(hostname: string): string {
@@ -30,20 +45,19 @@ function extractUserFromDomain(hostname: string): string {
 	return 'unknown-user';
 }
 
-export function getConfigForDomain(hostname: string, env?: Record<string, string>): UserConfig {
+export function getAPIEndpoint(hostname: string): string {
 	const userName = extractUserFromDomain(hostname);
-	const imgBase = PUBLIC_IMG_BASE || 'https://imagedelivery.net/ACCOUNT_HASH';
 	const apiBase = PUBLIC_API_BASE || 'https://api.chronon.dev';
-	const imgVariant = PUBLIC_IMG_VARIANT || 'default';
+	return `${apiBase}/data/${userName}/content.json`;
+}
 
-	const avatarVarName = `${userName.toUpperCase()}_AVATAR`;
-	const userAvatarPath = env?.[avatarVarName] || `${userName}-avatar/${imgVariant}`;
+export function getConfigFromAPIResponse(apiResponse: APIResponse): UserConfig {
+	const { user, config } = apiResponse;
 
 	return {
-		imgBase,
-		imgSource: `${apiBase}/data/${userName}/images.json`,
-		imgVariant,
-		userAvatar: `${imgBase}/${userAvatarPath}`,
-		userName
+		imgBase: config.imageBase,
+		imgVariant: config.imageVariant,
+		userAvatar: `${config.imageBase}/${user.avatar.id}/${user.avatar.variant}`,
+		userName: user.name
 	};
 }

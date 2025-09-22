@@ -1,13 +1,17 @@
 import type { LayoutServerLoad } from './$types';
-import { getConfigForDomain } from '$lib/config';
+import { getAPIEndpoint, getConfigFromAPIResponse } from '$lib/config';
 
-export const load: LayoutServerLoad = async ({ url, platform }) => {
-	const config = getConfigForDomain(
-		url.hostname,
-		(platform as { env?: Record<string, string> })?.env
-	);
+export const load: LayoutServerLoad = async ({ url }) => {
+	const apiEndpoint = getAPIEndpoint(url.hostname);
+
+	const apiResponse = await fetch(apiEndpoint, {
+		method: 'GET'
+	}).then((response) => response.json());
+
+	const config = getConfigFromAPIResponse(apiResponse);
 
 	return {
-		config
+		config,
+		apiResponse
 	};
 };
