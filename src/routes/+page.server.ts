@@ -5,6 +5,6 @@ export const load: PageServerLoad = async ({ parent }) => {
 
 	return {
 		config,
-		images: apiResponse.images
+		images: apiResponse?.images || []
 	};
 };
