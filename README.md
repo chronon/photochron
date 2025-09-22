@@ -1,23 +1,24 @@
-# Chrononagram
+# Chrononagram Web
 
-A multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos and avatar based on convention-over-configuration principles.
+A multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos and configuration based on convention-over-configuration principles.
 
 ## Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
 - **Subdomain support** - `admin.example.com` also shows example's photos
+- **Dynamic configuration** - All user config (CDN, avatars, images) comes from API
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Cloudflare Images integration** - Optimized image delivery
 - **Zero configuration** - Add new users by just adding their domain
 
 ## How It Works
 
-The application extracts the username from the domain name and dynamically generates configuration:
+The application extracts the username from the domain name and fetches all configuration dynamically from your API:
 
-- **example.com** → username: `example` → API: `/data/example/images.json`
-- **photos.jane-doe.com** → username: `jane-doe` → API: `/data/jane-doe/images.json`
-- **admin.mysite.com** → username: `mysite` → API: `/data/mysite/images.json`
+- **example.com** → username: `example` → API: `/data/example/content.json`
+- **photos.jane-doe.com** → username: `jane-doe` → API: `/data/jane-doe/content.json`
+- **admin.mysite.com** → username: `mysite` → API: `/data/mysite/content.json`
 
 ## Quick Start
 
@@ -34,11 +35,7 @@ pnpm install
 Copy `.env-example` to `.env` and update:
 
 ```bash
-# Cloudflare Images CDN configuration
-PUBLIC_IMG_BASE="https://imagedelivery.net/YOUR_ACCOUNT_HASH"
-PUBLIC_IMG_VARIANT="default"
-
-# API configuration
+# API configuration - your API endpoint base URL
 PUBLIC_API_BASE="https://api.yourdomain.com"
 
 # Development configuration (for localhost testing only)
@@ -68,50 +65,51 @@ wrangler deploy
 
 That's it! The new domain will automatically work.
 
-### API Requirements
+## API Requirements
 
-Each user needs their images available at:
+Each user needs their data available at:
 
 ```
-https://api.yourdomain.com/data/USERNAME/images.json
+https://api.yourdomain.com/data/USERNAME/content.json
 ```
 
-Expected JSON format:
+### Expected API Response Structure
+
+Your API must return this exact JSON structure:
 
 ```json
-[
-	{
-		"id": "cloudflare-image-id",
-		"caption": "Photo caption",
-		"uploaded": "2024-01-01T00:00:00Z"
-	}
-]
+{
+  "user": {
+    "name": "silklag",
+    "avatar": {
+      "id": "ad285229-8231-4dac-e7d4-86e361718f00",
+      "variant": "default"
+    }
+  },
+  "config": {
+    "imageBase": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g",
+    "imageVariant": "default"
+  },
+  "images": [
+    {
+      "id": "5866f3f0-69f4-447b-11b2-c960d3e3dc00",
+      "name": "IMG_3818",
+      "caption": "GY!BE @ Pisgah Brewing",
+      "taken": "2025-09-06T21:25:40-04:00",
+      "uploaded": "2025-09-07T12:33:04-04:00"
+    }
+  ]
+}
 ```
 
-## Avatar Configuration
+### API Response Fields
 
-### Using Custom Avatars
-
-Each user can have a custom avatar by setting a Cloudflare secret:
-
-1. **Via Dashboard**:
-   - Go to Workers & Pages → Your Worker → Settings → Variables and Secrets
-   - Add **Secret**: Name: `USERNAME_AVATAR`, Value: `image-id/variant`
-   - Example: Name: `EXAMPLE_AVATAR`, Value: `ad285229-8231-4dac-e7d4-86e361718f00/default`
-
-2. **Via Wrangler**:
-   ```bash
-   echo "ad285229-8231-4dac-e7d4-86e361718f00/default" | npx wrangler secret put EXAMPLE_AVATAR
-   echo "585ca822-8827-4504-78c5-b76b377fdd00/default" | npx wrangler secret put JANE_AVATAR
-   ```
-
-### Avatar Fallback
-
-If no `USERNAME_AVATAR` secret is set, the system falls back to:
-
-```
-https://imagedelivery.net/ACCOUNT_HASH/username-avatar/default
-```
+- **`user.name`**: Display name for the user
+- **`user.avatar.id`**: Cloudflare Images ID for user's avatar
+- **`user.avatar.variant`**: Image variant for avatar (e.g., "default")
+- **`config.imageBase`**: Base URL for your CDN (e.g., Cloudflare Images delivery URL)
+- **`config.imageVariant`**: Default variant for gallery images
+- **`images[]`**: Array of image objects with id, name, optional caption, and timestamps
 
 ## Development Commands
 
@@ -145,9 +143,9 @@ src/
 │   ├── config.ts           # Domain-to-user configuration logic
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
-│   ├── +layout.server.ts   # Layout-level config loading
+│   ├── +layout.server.ts   # API data fetching and config extraction
 │   ├── +layout.svelte      # Site header with user info
-│   ├── +page.server.ts     # Image data loading
+│   ├── +page.server.ts     # Image data passing with validation
 │   └── +page.svelte        # Main photo gallery
 └── app.html                # HTML template
 ```
@@ -155,38 +153,61 @@ src/
 ### Key Components
 
 - **Domain Extraction** (`src/lib/config.ts`): Parses hostname to determine user
-- **Dynamic Configuration**: Generates API endpoints and image URLs per user
+- **API Integration**: Single API call fetches all user data and configuration
+- **Dynamic Configuration**: No hardcoded CDN URLs or user-specific data
 - **Server-Side Loading**: Fetches user-specific data based on request domain
 - **Infinite Scroll**: Lazy loads images with IntersectionObserver
+
+### Configuration Flow
+
+1. **Request arrives** with domain (e.g., `example.com`)
+2. **Extract username** from domain (`example`)
+3. **Build API URL** (`/data/example/content.json`)
+4. **Fetch API data** (user info, config, images)
+5. **Generate config** (avatar URL, CDN settings)
+6. **Render page** with user-specific data
 
 ## Deployment
 
 ### Cloudflare Workers
 
-The application deploys as a single Cloudflare Worker that handles all domains:
+The application deploys as a single Cloudflare Worker with no domain-specific configuration:
 
 ```jsonc
 {
-	"name": "chrononagram-web",
-	"main": ".svelte-kit/cloudflare/_worker.js",
-	"compatibility_date": "2025-09-06",
-	"compatibility_flags": ["nodejs_als"]
+  "name": "chrononagram-web",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2025-09-06",
+  "compatibility_flags": ["nodejs_als"],
+  "workers_dev": false
 }
 ```
 
 ### Environment Variables
 
-Set these in your Cloudflare Worker dashboard:
+Only two environment variables are needed:
 
-- **Production**: Set via Cloudflare Dashboard → Variables and Secrets
-- **Development**: Use `.env` file (not committed to git)
+- **`PUBLIC_API_BASE`**: Your API base URL (production)
+- **`PUBLIC_USER_NAME`**: Username for localhost development only
+
+Set these in your Cloudflare Worker dashboard under Variables and Secrets.
 
 ## Adding New Users
 
-1. **Ensure API endpoint exists**: `https://api.yourdomain.com/data/newuser/images.json`
-2. **Add domain routing**: Cloudflare Dashboard → Add routes for `newuser.com/*`
-3. **Optional avatar**: Add `NEWUSER_AVATAR` secret with Cloudflare image ID
-4. **Done!** - No code changes or redeployment needed
+1. **Create API endpoint**: Ensure `https://api.yourdomain.com/data/newuser/content.json` returns proper structure
+2. **Add domain routing**: Cloudflare Dashboard → Add routes for `newuser.com/*` and `*.newuser.com/*`
+3. **Done!** - No code changes, secrets, or redeployment needed
+
+## Open Source Ready
+
+This codebase contains:
+- ✅ Zero hardcoded domains or user specifics
+- ✅ Generic configuration system
+- ✅ Complete API documentation
+- ✅ Example environment setup
+- ✅ Comprehensive TypeScript types
+
+Perfect for forking and customizing for your own multi-user gallery platform.
 
 ## Contributing
 
@@ -205,5 +226,5 @@ MIT License - see LICENSE file for details.
 For issues and questions:
 
 - **GitHub Issues**: https://github.com/chronon/chrononagram-web/issues
-- **Documentation**: This README and code comments
+- **Documentation**: This README and JSDoc comments in code
 - **Examples**: See `.env-example` for configuration reference
