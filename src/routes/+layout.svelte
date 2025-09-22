@@ -1,14 +1,15 @@
 <script lang="ts">
-	import { PUBLIC_USER_NAME, PUBLIC_USER_AVATAR } from '$env/static/public';
+	import type { LayoutServerData } from './$types';
 	interface Props {
 		children?: import('svelte').Snippet;
+		data: LayoutServerData;
 	}
 
-	let { children }: Props = $props();
+	let { children, data }: Props = $props();
 </script>
 
 <svelte:head>
-	<title>{PUBLIC_USER_NAME}</title>
+	<title>{data.config.userName}</title>
 </svelte:head>
 
 <div class="mx-auto max-w-6xl sm:px-6 lg:px-8">
@@ -16,14 +17,14 @@
 		<div class="-mt-2 -ml-4 flex flex-wrap items-center justify-between sm:flex-nowrap">
 			<div class="mt-2 ml-4">
 				<h3 class="text-xl font-semibold text-sky-800 uppercase">
-					{PUBLIC_USER_NAME}
+					{data.config.userName}
 				</h3>
 			</div>
 			<div class="mt-2 ml-4 flex-shrink-0">
 				<img
 					loading="lazy"
-					src={PUBLIC_USER_AVATAR}
-					alt={PUBLIC_USER_NAME}
+					src={data.config.userAvatar}
+					alt={data.config.userName}
 					class="mr-2 inline-block h-8 w-8 rounded-full"
 				/>
 			</div>

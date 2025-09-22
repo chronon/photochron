@@ -1,12 +1,10 @@
 import type { PageServerLoad } from './$types';
-import { PUBLIC_IMG_SOURCE } from '$env/static/public';
 
-const imgSource: string = PUBLIC_IMG_SOURCE;
+export const load: PageServerLoad = async ({ parent }) => {
+	const { config, apiResponse } = await parent();
 
-export const load: PageServerLoad = async () => {
 	return {
-		images: await fetch(imgSource, {
-			method: 'GET'
-		}).then((response) => response.json())
+		config,
+		images: apiResponse?.images || []
 	};
 };

@@ -2,13 +2,6 @@
 	import type { PageServerData } from './$types';
 	import InfiniteScroll from '$lib/InfiniteScroll.svelte';
 
-	import {
-		PUBLIC_IMG_BASE,
-		PUBLIC_IMG_VARIANT,
-		PUBLIC_USER_NAME,
-		PUBLIC_USER_AVATAR
-	} from '$env/static/public';
-
 	interface Props {
 		data: PageServerData;
 	}
@@ -25,11 +18,11 @@
 		<div class="flex items-center p-2">
 			<img
 				loading="lazy"
-				src={PUBLIC_USER_AVATAR}
-				alt={PUBLIC_USER_NAME}
+				src={data.config.userAvatar}
+				alt={data.config.userName}
 				class="mr-2 inline-block h-8 w-8 rounded-full"
 			/>
-			<p class="font-semibold">{PUBLIC_USER_NAME}</p>
+			<p class="font-semibold">{data.config.userName}</p>
 		</div>
 		<div
 			class="rounded-lg bg-gray-50 bg-[url('/loading.gif')] bg-[size:50px] bg-center bg-no-repeat"
@@ -37,7 +30,7 @@
 		>
 			<img
 				loading="lazy"
-				src="{PUBLIC_IMG_BASE}/{image.id}/{PUBLIC_IMG_VARIANT}"
+				src="{data.config.imgBase}/{image.id}/{data.config.imgVariant}"
 				alt={image.caption}
 				class="mx-auto"
 			/>
