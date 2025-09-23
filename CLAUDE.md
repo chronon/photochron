@@ -39,6 +39,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - Extracts username from domain (example.com → example user)
 - **Dynamic configuration** - All user config fetched from API endpoints
+- **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Infinite scroll** - Smooth loading with IntersectionObserver
 - **Cloudflare Images integration** - Optimized image delivery
 
@@ -49,10 +50,12 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
 - **Config Module** (`src/lib/config.ts`) - Domain parsing and API response handling with full TypeScript interfaces
+- **Hooks Server** (`src/hooks.server.ts`) - Intercepts favicon requests and redirects to user-specific Cloudflare Images variants
 
 ### API Integration
 
 The app fetches all configuration from `${PUBLIC_API_BASE}/data/${username}/content.json` with this expected structure:
+
 - `user.name` and `user.avatar` - Profile information
 - `config.imageBase` and `config.imageVariant` - CDN configuration
 - `images[]` - Array of photos with id, caption, taken/uploaded dates
@@ -78,4 +81,20 @@ The app fetches all configuration from `${PUBLIC_API_BASE}/data/${username}/cont
 - `src/routes/+page.svelte` - Main gallery display with infinite scroll
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types and domain/API utilities
+- `src/hooks.server.ts` - Dynamic favicon handling with user-specific redirects
 - `wrangler.jsonc` - Cloudflare Workers deployment configuration
+
+### Dynamic Favicon System
+
+The application implements user-specific favicons that change per domain:
+
+- **Favicon interception** - SvelteKit hooks intercept `/favicon.ico`, `/favicon-16x16.png`, `/favicon-32x32.png`, and `/apple-touch-icon.png` requests
+- **User avatar variants** - Redirects to Cloudflare Images variants: `favicon16`, `favicon32`, `apple180`
+- **Fallback system** - Falls back to static files (`fallback-*` in `/static/`) if API fails
+- **Edge caching** - HTTP 302 redirects with 1-hour cache headers for performance
+
+**Required Cloudflare Images variants:**
+
+- `favicon16` (16x16, PNG)
+- `favicon32` (32x32, PNG)
+- `apple180` (180x180, PNG)

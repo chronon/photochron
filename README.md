@@ -9,6 +9,7 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 - **Subdomain support** - `admin.example.com` also shows example's photos
 - **Dynamic configuration** - All user config (CDN, avatars, images) comes from API
 - **Infinite scroll** - Smooth loading of photo galleries
+- **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery
 - **Zero configuration** - Add new users by just adding their domain
 
@@ -79,33 +80,33 @@ Your API must return this exact JSON structure:
 
 ```json
 {
-  "user": {
-    "name": "silklag",
-    "avatar": {
-      "id": "ad285229-8231-4dac-e7d4-86e361718f00",
-      "variant": "default"
-    }
-  },
-  "config": {
-    "imageBase": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g",
-    "imageVariant": "default"
-  },
-  "images": [
-    {
-      "id": "5866f3f0-69f4-447b-11b2-c960d3e3dc00",
-      "name": "IMG_3818",
-      "caption": "GY!BE @ Pisgah Brewing",
-      "taken": "2025-09-06T21:25:40-04:00",
-      "uploaded": "2025-09-07T12:33:04-04:00"
-    }
-  ]
+	"user": {
+		"name": "silklag",
+		"avatar": {
+			"id": "ad285229-8231-4dac-e7d4-86e361718f00",
+			"variant": "default"
+		}
+	},
+	"config": {
+		"imageBase": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g",
+		"imageVariant": "default"
+	},
+	"images": [
+		{
+			"id": "5866f3f0-69f4-447b-11b2-c960d3e3dc00",
+			"name": "IMG_3818",
+			"caption": "GY!BE @ Pisgah Brewing",
+			"taken": "2025-09-06T21:25:40-04:00",
+			"uploaded": "2025-09-07T12:33:04-04:00"
+		}
+	]
 }
 ```
 
 ### API Response Fields
 
 - **`user.name`**: Display name for the user
-- **`user.avatar.id`**: Cloudflare Images ID for user's avatar
+- **`user.avatar.id`**: Cloudflare Images ID for user's avatar (also used for favicons)
 - **`user.avatar.variant`**: Image variant for avatar (e.g., "default")
 - **`config.imageBase`**: Base URL for your CDN (e.g., Cloudflare Images delivery URL)
 - **`config.imageVariant`**: Default variant for gallery images
@@ -147,7 +148,8 @@ src/
 │   ├── +layout.svelte      # Site header with user info
 │   ├── +page.server.ts     # Image data passing with validation
 │   └── +page.svelte        # Main photo gallery
-└── app.html                # HTML template
+├── hooks.server.ts         # Dynamic favicon handling
+└── app.html                # HTML template with favicon links
 ```
 
 ### Key Components
@@ -155,6 +157,7 @@ src/
 - **Domain Extraction** (`src/lib/config.ts`): Parses hostname to determine user
 - **API Integration**: Single API call fetches all user data and configuration
 - **Dynamic Configuration**: No hardcoded CDN URLs or user-specific data
+- **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects
 - **Server-Side Loading**: Fetches user-specific data based on request domain
 - **Infinite Scroll**: Lazy loads images with IntersectionObserver
 
@@ -175,11 +178,11 @@ The application deploys as a single Cloudflare Worker with no domain-specific co
 
 ```jsonc
 {
-  "name": "chrononagram-web",
-  "main": ".svelte-kit/cloudflare/_worker.js",
-  "compatibility_date": "2025-09-06",
-  "compatibility_flags": ["nodejs_als"],
-  "workers_dev": false
+	"name": "chrononagram-web",
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"compatibility_date": "2025-09-06",
+	"compatibility_flags": ["nodejs_als"],
+	"workers_dev": false
 }
 ```
 
@@ -196,11 +199,23 @@ Set these in your Cloudflare Worker dashboard under Variables and Secrets.
 
 1. **Create API endpoint**: Ensure `https://api.yourdomain.com/data/newuser/content.json` returns proper structure
 2. **Add domain routing**: Cloudflare Dashboard → Add routes for `newuser.com/*` and `*.newuser.com/*`
-3. **Done!** - No code changes, secrets, or redeployment needed
+3. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
+4. **Done!** - No code changes, secrets, or redeployment needed
+
+### Cloudflare Images Favicon Variants
+
+For dynamic favicons to work, create these variants for each user's avatar image:
+
+- **`favicon16`**: 16x16 pixels, PNG format
+- **`favicon32`**: 32x32 pixels, PNG format
+- **`apple180`**: 180x180 pixels, PNG format
+
+If variants don't exist, the system falls back to static favicon files.
 
 ## Open Source Ready
 
 This codebase contains:
+
 - ✅ Zero hardcoded domains or user specifics
 - ✅ Generic configuration system
 - ✅ Complete API documentation
