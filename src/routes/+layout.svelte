@@ -21,12 +21,14 @@
 				</h3>
 			</div>
 			<div class="mt-2 ml-4 flex-shrink-0">
-				<img
-					loading="lazy"
-					src={data.config.userAvatar}
-					alt={data.config.userName}
-					class="mr-2 inline-block h-8 w-8 rounded-full"
-				/>
+				<div class="mr-2 h-8 w-8 flex-shrink-0 rounded-full bg-gray-200">
+					<img
+						loading="lazy"
+						src={data.config.userAvatar}
+						alt={data.config.userName}
+						class="h-full w-full rounded-full object-cover"
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
