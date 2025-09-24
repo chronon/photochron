@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageServerData } from './$types';
 	import InfiniteScroll from '$lib/InfiniteScroll.svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		data: PageServerData;
@@ -11,6 +12,11 @@
 	let increment = 2;
 	let count = $state(increment);
 	const loadMore = () => (count += increment);
+
+	let loadedImages = new SvelteSet<string>();
+	const handleImageLoad = (imageId: string) => {
+		loadedImages.add(imageId);
+	};
 </script>
 
 {#each data.images.slice(0, count) as image (image.id)}
@@ -24,15 +30,17 @@
 			/>
 			<p class="font-semibold">{data.config.userName}</p>
 		</div>
-		<div
-			class="rounded-lg bg-gray-50 bg-[url('/loading.gif')] bg-[size:50px] bg-center bg-no-repeat"
-			style="min-height: 35vh"
-		>
+		<div class="relative overflow-hidden rounded-lg" style="min-height: 35vh">
+			{#if !loadedImages.has(image.id)}
+				<div class="absolute inset-0 animate-pulse bg-gray-200"></div>
+			{/if}
 			<img
 				loading="lazy"
 				src="{data.config.imgBase}/{image.id}/{data.config.imgVariant}"
 				alt={image.caption}
-				class="mx-auto"
+				class="mx-auto transition-opacity duration-300"
+				class:opacity-0={!loadedImages.has(image.id)}
+				onload={() => handleImageLoad(image.id)}
 			/>
 		</div>
 		<div class="p-2">

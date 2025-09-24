@@ -111,7 +111,6 @@ src/
 #### Static Assets (`static/`)
 
 - `fallback-*.png` - Fallback favicons when API fails
-- `loading.gif` - Loading animation
 
 #### Test Structure
 
