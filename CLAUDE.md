@@ -98,3 +98,8 @@ The application implements user-specific favicons that change per domain:
 - `favicon16` (16x16, PNG)
 - `favicon32` (32x32, PNG)
 - `apple180` (180x180, PNG)
+
+### Misc
+
+- When planning or writing code, always remember and consider that this app runs in Cloudflare Workers. Don't write or suggest code that isn't optimal for that platform.
+- Remember that other Cloudflare products that work with Cloudflare Workers are available to suggest if it makes the most sense.

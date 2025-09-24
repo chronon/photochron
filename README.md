@@ -43,13 +43,41 @@ PUBLIC_API_BASE="https://api.yourdomain.com"
 PUBLIC_USER_NAME="your-username"
 ```
 
-### 3. Development
+### 3. Configure Deployment
+
+Copy `wrangler.jsonc.example` to `wrangler.jsonc` and update with your domains and API configuration:
+
+```bash
+cp wrangler.jsonc.example wrangler.jsonc
+```
+
+Edit `wrangler.jsonc` to include your custom domains and environment variables:
+
+```jsonc
+{
+	"routes": [
+		{
+			"pattern": "yourdomain.com",
+			"custom_domain": true
+		},
+		{
+			"pattern": "admin.yourdomain.com",
+			"custom_domain": true
+		}
+	],
+	"vars": {
+		"PUBLIC_API_BASE": "https://api.yourdomain.com"
+	}
+}
+```
+
+### 4. Development
 
 ```bash
 pnpm dev  # http://localhost:5173
 ```
 
-### 4. Deploy
+### 5. Deploy
 
 ```bash
 pnpm build
@@ -60,9 +88,16 @@ wrangler deploy
 
 ### Add New Domains
 
+**Option 1: Using Wrangler Configuration (Recommended)**
+
+1. **Edit `wrangler.jsonc`**: Add your domain to the routes array (see setup section for config format)
+2. **Deploy**: Run `pnpm deploy` to apply changes
+
+**Option 2: Using Cloudflare Dashboard**
+
 1. **Cloudflare Dashboard**: Go to Workers & Pages → Your Worker → Settings → Triggers
-2. **Add Route**: `newdomain.com/*` → point to your worker
-3. **Add Subdomain Route**: `*.newdomain.com/*` → point to your worker
+2. **Add Custom Domain**: `newdomain.com` → point to your worker
+3. **Add Subdomain**: `admin.newdomain.com` → point to your worker
 
 That's it! The new domain will automatically work.
 
@@ -174,17 +209,7 @@ src/
 
 ### Cloudflare Workers
 
-The application deploys as a single Cloudflare Worker with no domain-specific configuration:
-
-```jsonc
-{
-	"name": "chrononagram-web",
-	"main": ".svelte-kit/cloudflare/_worker.js",
-	"compatibility_date": "2025-09-06",
-	"compatibility_flags": ["nodejs_als"],
-	"workers_dev": false
-}
-```
+The application deploys as a single Cloudflare Worker. See the setup section for full `wrangler.jsonc` configuration including routes and environment variables.
 
 ### Environment Variables
 
@@ -193,14 +218,14 @@ Only two environment variables are needed:
 - **`PUBLIC_API_BASE`**: Your API base URL (production)
 - **`PUBLIC_USER_NAME`**: Username for localhost development only
 
-Set these in your Cloudflare Worker dashboard under Variables and Secrets.
+Set these in your `wrangler.jsonc` file or in the Cloudflare Worker dashboard under Variables and Secrets.
 
 ## Adding New Users
 
 1. **Create API endpoint**: Ensure `https://api.yourdomain.com/data/newuser/content.json` returns proper structure
-2. **Add domain routing**: Cloudflare Dashboard → Add routes for `newuser.com/*` and `*.newuser.com/*`
+2. **Add domain routing**: Edit `wrangler.jsonc` to add routes for `newuser.com` and `admin.newuser.com`, then deploy
 3. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
-4. **Done!** - No code changes, secrets, or redeployment needed
+4. **Done!** - No code changes or secrets needed
 
 ### Cloudflare Images Favicon Variants
 
