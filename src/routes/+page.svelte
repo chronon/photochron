@@ -20,17 +20,21 @@
 </script>
 
 {#each data.images.slice(0, count) as image (image.id)}
-	<div class="mx-auto mb-8 max-w-5xl rounded-lg">
+	<div class="mx-auto mb-8 max-w-5xl rounded-lg contain-layout contain-style">
 		<div class="flex items-center p-2">
-			<img
-				loading="lazy"
-				src={data.config.userAvatar}
-				alt={data.config.userName}
-				class="mr-2 inline-block h-8 w-8 rounded-full"
-			/>
+			<div class="mr-2 h-8 w-8 flex-shrink-0 rounded-full bg-gray-200">
+				<img
+					loading="lazy"
+					src={data.config.userAvatar}
+					alt={data.config.userName}
+					class="h-full w-full rounded-full object-cover"
+				/>
+			</div>
 			<p class="font-semibold">{data.config.userName}</p>
 		</div>
-		<div class="relative overflow-hidden rounded-lg" style="min-height: 35vh">
+		<div
+			class="relative min-h-[250px] overflow-hidden bg-gray-100 sm:min-h-[350px] sm:rounded-lg lg:min-h-[450px]"
+		>
 			{#if !loadedImages.has(image.id)}
 				<div class="absolute inset-0 animate-pulse bg-gray-200"></div>
 			{/if}
@@ -38,7 +42,7 @@
 				loading="lazy"
 				src="{data.config.imgBase}/{image.id}/{data.config.imgVariant}"
 				alt={image.caption}
-				class="mx-auto transition-opacity duration-300"
+				class="w-full object-contain transition-opacity duration-300"
 				class:opacity-0={!loadedImages.has(image.id)}
 				onload={() => handleImageLoad(image.id)}
 			/>
