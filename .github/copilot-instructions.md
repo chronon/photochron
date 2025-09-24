@@ -4,6 +4,17 @@
 
 **Chrononagram Web** is a multi-user, domain-based photo gallery application built with SvelteKit 2.x and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos based on dynamic API configuration using convention-over-configuration principles.
 
+### Key Features
+
+- **Multi-user support** - One deployment serves unlimited domains/users
+- **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
+- **Subdomain support** - `admin.example.com` also shows example's photos
+- **Dynamic configuration** - All user config (CDN, avatars, images) comes from API
+- **Infinite scroll** - Smooth loading of photo galleries
+- **Dynamic favicons** - User-specific favicons and touch icons per domain
+- **Cloudflare Images integration** - Optimized image delivery
+- **Zero configuration** - Add new users by just adding their domain
+
 ### Key Information
 
 - **Type**: SvelteKit web application for Cloudflare Workers
@@ -203,3 +214,8 @@ Both commands MUST pass or CI will fail.
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
 - **Configuration**: Modify files in project root, always test build process
+
+**Platform considerations:**
+
+- **Cloudflare Workers runtime**: Always consider that this app runs in Cloudflare Workers - don't write or suggest code that isn't optimal for that platform
+- **Cloudflare ecosystem**: Remember that other Cloudflare products that work with Cloudflare Workers are available to suggest if it makes the most sense
