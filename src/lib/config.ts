@@ -1,10 +1,10 @@
 import { env } from '$env/dynamic/public';
 
 export interface UserConfig {
-	imgBase: string;
-	imgVariant: string;
-	userAvatar: string;
-	userName: string;
+  imgBase: string;
+  imgVariant: string;
+  userAvatar: string;
+  userName: string;
 }
 
 /**
@@ -40,75 +40,75 @@ export interface UserConfig {
  * ```
  */
 export interface APIResponse {
-	/** User information and profile data */
-	user: {
-		/** Display name for the user */
-		name: string;
-		/** User's profile avatar configuration */
-		avatar: {
-			/** Cloudflare Images ID or CDN identifier for avatar image */
-			id: string;
-			/** Image variant to use (e.g., "default", "thumbnail") */
-			variant: string;
-		};
-	};
-	/** CDN and image serving configuration */
-	config: {
-		/** Base URL for image CDN (e.g., Cloudflare Images delivery URL) */
-		imageBase: string;
-		/** Default variant to use for gallery images */
-		imageVariant: string;
-	};
-	/** Array of images to display in the gallery */
-	images: Array<{
-		/** Unique identifier for the image (used in CDN URL) */
-		id: string;
-		/** Original filename or display name */
-		name: string;
-		/** Optional caption text to display */
-		caption?: string;
-		/** ISO date string when photo was taken */
-		taken: string;
-		/** ISO date string when photo was uploaded */
-		uploaded: string;
-	}>;
+  /** User information and profile data */
+  user: {
+    /** Display name for the user */
+    name: string;
+    /** User's profile avatar configuration */
+    avatar: {
+      /** Cloudflare Images ID or CDN identifier for avatar image */
+      id: string;
+      /** Image variant to use (e.g., "default", "thumbnail") */
+      variant: string;
+    };
+  };
+  /** CDN and image serving configuration */
+  config: {
+    /** Base URL for image CDN (e.g., Cloudflare Images delivery URL) */
+    imageBase: string;
+    /** Default variant to use for gallery images */
+    imageVariant: string;
+  };
+  /** Array of images to display in the gallery */
+  images: Array<{
+    /** Unique identifier for the image (used in CDN URL) */
+    id: string;
+    /** Original filename or display name */
+    name: string;
+    /** Optional caption text to display */
+    caption?: string;
+    /** ISO date string when photo was taken */
+    taken: string;
+    /** ISO date string when photo was uploaded */
+    uploaded: string;
+  }>;
 }
 
 function extractUserFromDomain(hostname: string): string {
-	if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-		return env.PUBLIC_USER_NAME || 'dev-user';
-	}
+  if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+    return env.PUBLIC_USER_NAME || 'dev-user';
+  }
 
-	const parts = hostname.split('.');
-	if (parts.length === 2) {
-		return parts[0];
-	}
+  const parts = hostname.split('.');
+  if (parts.length === 2) {
+    return parts[0];
+  }
 
-	if (parts.length >= 3) {
-		return parts[parts.length - 2];
-	}
+  if (parts.length >= 3) {
+    return parts[parts.length - 2];
+  }
 
-	return 'unknown-user';
+  return 'unknown-user';
 }
 
 export function getAPIEndpoint(hostname: string): string {
-	const userName = extractUserFromDomain(hostname);
-	const apiBase = env.PUBLIC_API_BASE;
+  const userName = extractUserFromDomain(hostname);
+  const apiBase = env.PUBLIC_API_BASE;
 
-	if (!apiBase) {
-		throw new Error('PUBLIC_API_BASE environment variable is required');
-	}
+  if (!apiBase) {
+    throw new Error('PUBLIC_API_BASE environment variable is required');
+  }
 
-	return `${apiBase}/data/${userName}/content.json`;
+  return `${apiBase}/data/${userName}/content.json`;
 }
 
 export function getConfigFromAPIResponse(apiResponse: APIResponse): UserConfig {
-	const { user, config } = apiResponse;
+  const { user, config } = apiResponse;
 
-	return {
-		imgBase: config.imageBase,
-		imgVariant: config.imageVariant,
-		userAvatar: `${config.imageBase}/${user.avatar.id}/${user.avatar.variant}`,
-		userName: user.name
-	};
+  return {
+    imgBase: config.imageBase,
+    imgVariant: config.imageVariant,
+    userAvatar: `${config.imageBase}/${user.avatar.id}/${user.avatar.variant}`,
+    userName: user.name
+  };
 }
