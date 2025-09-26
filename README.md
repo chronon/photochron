@@ -55,19 +55,19 @@ Edit `wrangler.jsonc` to include your custom domains and environment variables:
 
 ```jsonc
 {
-	"routes": [
-		{
-			"pattern": "yourdomain.com",
-			"custom_domain": true
-		},
-		{
-			"pattern": "admin.yourdomain.com",
-			"custom_domain": true
-		}
-	],
-	"vars": {
-		"PUBLIC_API_BASE": "https://api.yourdomain.com"
-	}
+  "routes": [
+    {
+      "pattern": "yourdomain.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "admin.yourdomain.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "PUBLIC_API_BASE": "https://api.yourdomain.com"
+  }
 }
 ```
 
@@ -80,8 +80,7 @@ pnpm dev  # http://localhost:5173
 ### 5. Deploy
 
 ```bash
-pnpm build
-pnpm deploy
+pnpm run deploy
 ```
 
 ## Domain Setup
@@ -107,26 +106,26 @@ Your API must return this exact JSON structure:
 
 ```json
 {
-	"user": {
-		"name": "example",
-		"avatar": {
-			"id": "example-avatar-image-id",
-			"variant": "default"
-		}
-	},
-	"config": {
-		"imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
-		"imageVariant": "default"
-	},
-	"images": [
-		{
-			"id": "example-image-id",
-			"name": "Sample Photo",
-			"caption": "A beautiful sunset photo",
-			"taken": "2025-01-15T18:30:00-05:00",
-			"uploaded": "2025-01-15T20:15:00-05:00"
-		}
-	]
+  "user": {
+    "name": "example",
+    "avatar": {
+      "id": "example-avatar-image-id",
+      "variant": "default"
+    }
+  },
+  "config": {
+    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
+    "imageVariant": "default"
+  },
+  "images": [
+    {
+      "id": "example-image-id",
+      "name": "Sample Photo",
+      "caption": "A beautiful sunset photo",
+      "taken": "2025-01-15T18:30:00-05:00",
+      "uploaded": "2025-01-15T20:15:00-05:00"
+    }
+  ]
 }
 ```
 
