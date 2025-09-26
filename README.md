@@ -81,23 +81,15 @@ pnpm dev  # http://localhost:5173
 
 ```bash
 pnpm build
-wrangler deploy
+pnpm deploy
 ```
 
 ## Domain Setup
 
 ### Add New Domains
 
-**Option 1: Using Wrangler Configuration (Recommended)**
-
 1. **Edit `wrangler.jsonc`**: Add your domain to the routes array (see setup section for config format)
 2. **Deploy**: Run `pnpm deploy` to apply changes
-
-**Option 2: Using Cloudflare Dashboard**
-
-1. **Cloudflare Dashboard**: Go to Workers & Pages → Your Worker → Settings → Triggers
-2. **Add Custom Domain**: `newdomain.com` → point to your worker
-3. **Add Subdomain**: `admin.newdomain.com` → point to your worker
 
 That's it! The new domain will automatically work.
 
@@ -116,23 +108,23 @@ Your API must return this exact JSON structure:
 ```json
 {
 	"user": {
-		"name": "silklag",
+		"name": "example",
 		"avatar": {
-			"id": "ad285229-8231-4dac-e7d4-86e361718f00",
+			"id": "example-avatar-image-id",
 			"variant": "default"
 		}
 	},
 	"config": {
-		"imageBase": "https://imagedelivery.net/DvVl0mheSGO8iloS0s-G0g",
+		"imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
 		"imageVariant": "default"
 	},
 	"images": [
 		{
-			"id": "5866f3f0-69f4-447b-11b2-c960d3e3dc00",
-			"name": "IMG_3818",
-			"caption": "GY!BE @ Pisgah Brewing",
-			"taken": "2025-09-06T21:25:40-04:00",
-			"uploaded": "2025-09-07T12:33:04-04:00"
+			"id": "example-image-id",
+			"name": "Sample Photo",
+			"caption": "A beautiful sunset photo",
+			"taken": "2025-01-15T18:30:00-05:00",
+			"uploaded": "2025-01-15T20:15:00-05:00"
 		}
 	]
 }
@@ -237,18 +229,6 @@ For dynamic favicons to work, create these variants for each user's avatar image
 
 If variants don't exist, the system falls back to static favicon files.
 
-## Open Source Ready
-
-This codebase contains:
-
-- ✅ Zero hardcoded domains or user specifics
-- ✅ Generic configuration system
-- ✅ Complete API documentation
-- ✅ Example environment setup
-- ✅ Comprehensive TypeScript types
-
-Perfect for forking and customizing for your own multi-user gallery platform.
-
 ## Contributing
 
 1. **Install dependencies**: `pnpm install`
@@ -260,11 +240,3 @@ Perfect for forking and customizing for your own multi-user gallery platform.
 ## License
 
 MIT License - see LICENSE file for details.
-
-## Support
-
-For issues and questions:
-
-- **GitHub Issues**: https://github.com/chronon/chrononagram-web/issues
-- **Documentation**: This README and JSDoc comments in code
-- **Examples**: See `.env-example` for configuration reference
