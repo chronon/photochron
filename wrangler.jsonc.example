@@ -1,28 +1,28 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "chrononagram-web",
-	"main": ".svelte-kit/cloudflare/_worker.js",
-	"compatibility_date": "2025-09-06",
-	"compatibility_flags": ["nodejs_als"],
-	"workers_dev": false,
-	"assets": {
-		"binding": "ASSETS",
-		"directory": ".svelte-kit/cloudflare"
-	},
-	"observability": {
-		"enabled": true
-	},
-	"routes": [
-		{
-			"pattern": "example.com",
-			"custom_domain": true
-		},
-		{
-			"pattern": "admin.example.com",
-			"custom_domain": true
-		}
-	],
-	"vars": {
-		"PUBLIC_API_BASE": "https://api.example.com"
-	}
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chrononagram-web",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_date": "2025-09-06",
+  "compatibility_flags": ["nodejs_als"],
+  "workers_dev": false,
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    {
+      "pattern": "example.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "admin.example.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "PUBLIC_API_BASE": "https://api.example.com"
+  }
 }
