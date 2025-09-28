@@ -19,7 +19,7 @@ jobs:
   check-test:
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.50.0-noble
+      image: mcr.microsoft.com/playwright:v1.55.1-noble
 
     strategy:
       matrix:
@@ -44,5 +44,5 @@ jobs:
       - name: Check
         run: pnpm run check
 
-      # - name: Test
-      #   run: pnpm run test
+      - name: Unit tests
+        run: pnpm run test:unit --run
