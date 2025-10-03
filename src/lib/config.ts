@@ -52,14 +52,16 @@ export interface APIResponse {
 }
 
 export function extractUserFromDomain(hostname: string): string {
+  const hostWithoutPort = hostname.split(':')[0];
+
   if (
-    hostname.startsWith('localhost') ||
-    hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/)
+    hostWithoutPort.startsWith('localhost') ||
+    hostWithoutPort.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/)
   ) {
     return 'unknown-user';
   }
 
-  const parts = hostname.split('.');
+  const parts = hostWithoutPort.split('.');
   if (parts.length === 2) {
     return parts[0];
   }
