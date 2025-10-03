@@ -1,25 +1,29 @@
 # Chrononagram Web
 
-A multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos and configuration based on convention-over-configuration principles.
+A multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos using Cloudflare KV for configuration storage.
 
 ## Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
 - **Subdomain support** - `admin.example.com` also shows example's photos
-- **Dynamic configuration** - All user config (CDN, avatars, images) comes from API
+- **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
+- **Dynamic content** - Images fetched from API per user
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery
-- **Zero configuration** - Add new users by just adding their domain
+- **Zero secrets** - No environment variables or API keys needed
 
 ## How It Works
 
-The application extracts the username from the domain name and fetches all configuration dynamically from your API:
+The application extracts the username from the domain name, loads configuration from Cloudflare KV, and fetches images from your API:
 
-- **example.com** → username: `example` → API: `/data/example/content.json`
-- **photos.jane-doe.com** → username: `jane-doe` → API: `/data/jane-doe/content.json`
-- **admin.mysite.com** → username: `mysite` → API: `/data/mysite/content.json`
+1. **Domain** → **Username** → **KV Config** → **API Images**
+2. **example.com** → `example` → KV: `user:example` → API: `/data/example/content.json`
+3. **admin.jane.com** → `jane` → KV: `user:jane` → API: `/data/jane/content.json`
+
+**Configuration** (CDN URLs, avatars) is stored in KV at deployment time.
+**Content** (images) is fetched from API at runtime.
 
 ## Quick Start
 
@@ -31,92 +35,65 @@ cd chrononagram-web
 pnpm install
 ```
 
-### 2. Configure Environment
+### 2. Configure Your Deployment
 
-Copy `.env-example` to `.env` and update:
-
-```bash
-# API configuration - your API endpoint base URL
-PUBLIC_API_BASE="https://api.yourdomain.com"
-
-# Development configuration (for localhost testing only)
-PUBLIC_USER_NAME="your-username"
-```
-
-### 3. Configure Deployment
-
-Copy `wrangler.jsonc.example` to `wrangler.jsonc` and update with your domains and API configuration:
+Copy the example configuration and customize it:
 
 ```bash
-cp wrangler.jsonc.example wrangler.jsonc
+cp config/app-example.json config/app.json
 ```
 
-Edit `wrangler.jsonc` to include your custom domains and environment variables:
+Edit `config/app.json` with your settings:
 
-```jsonc
-{
-  "routes": [
-    {
-      "pattern": "yourdomain.com",
-      "custom_domain": true
-    },
-    {
-      "pattern": "admin.yourdomain.com",
-      "custom_domain": true
-    }
-  ],
-  "vars": {
-    "PUBLIC_API_BASE": "https://api.yourdomain.com"
-  }
-}
-```
+- Update `global.apiBase` with your API endpoint
+- Update `global.imageBase` with your Cloudflare Images delivery URL
+- Update `wrangler.kv_namespaces[0].id` with your KV namespace ID
+- Add your users with their domains and avatar IDs
 
-### 4. Development
+### 3. Development
 
 ```bash
 pnpm dev  # http://localhost:5173
 ```
 
-### 5. Deploy
+### 4. Deploy
 
 ```bash
-pnpm run deploy
+pnpm deploy
 ```
 
-## Domain Setup
+This will:
 
-### Add New Domains
+1. Generate KV data from `config/app.json`
+2. Upload configuration to Cloudflare KV
+3. Generate `wrangler.jsonc` with routes
+4. Build and deploy to Cloudflare Workers
 
-1. **Edit `wrangler.jsonc`**: Add your domain to the routes array (see setup section for config format)
-2. **Deploy**: Run `pnpm deploy` to apply changes
+## Adding New Users
 
-That's it! The new domain will automatically work.
+1. **Edit `config/app.json`**: Add new user to the `users` object
+2. **Deploy**: Run `pnpm deploy` to upload config and deploy
+3. **Done!** - The new domain will automatically work
 
-## API Requirements
+## Configuration
 
-Each user needs their data available at:
+### KV Storage Structure
 
-```
-https://api.yourdomain.com/data/USERNAME/content.json
-```
+Configuration is stored in Cloudflare KV with these keys:
 
-### Expected API Response Structure
+- **`global`**: Global config (API base, image CDN settings)
+- **`user:USERNAME`**: Per-user config (domain, name, avatar)
 
-Your API must return this exact JSON structure:
+These are automatically generated from `config/app.json` during deployment.
+
+### API Requirements
+
+Your API must return images at: `https://api.yourdomain.com/data/USERNAME/content.json`
+
+**Expected API Response:**
 
 ```json
 {
-  "user": {
-    "name": "example",
-    "avatar": {
-      "id": "example-avatar-image-id",
-      "variant": "default"
-    }
-  },
-  "config": {
-    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
-    "imageVariant": "default"
-  },
   "images": [
     {
       "id": "example-image-id",
@@ -129,14 +106,14 @@ Your API must return this exact JSON structure:
 }
 ```
 
-### API Response Fields
+**API Response Fields:**
 
-- **`user.name`**: Display name for the user
-- **`user.avatar.id`**: Cloudflare Images ID for user's avatar (also used for favicons)
-- **`user.avatar.variant`**: Image variant for avatar (e.g., "default")
-- **`config.imageBase`**: Base URL for your CDN (e.g., Cloudflare Images delivery URL)
-- **`config.imageVariant`**: Default variant for gallery images
-- **`images[]`**: Array of image objects with id, name, optional caption, and timestamps
+- **`images[]`**: Array of image objects
+- **`id`**: Cloudflare Images ID or CDN identifier
+- **`name`**: Original filename or display name
+- **`caption`**: Optional caption text
+- **`taken`**: ISO date string when photo was taken
+- **`uploaded`**: ISO date string when photo was uploaded
 
 ## Development Commands
 
@@ -181,9 +158,9 @@ src/
 ### Key Components
 
 - **Domain Extraction** (`src/lib/config.ts`): Parses hostname to determine user
-- **API Integration**: Single API call fetches all user data and configuration
-- **Dynamic Configuration**: No hardcoded CDN URLs or user-specific data
-- **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects
+- **KV Configuration** (`src/lib/config.ts`): Fetches global and user config from Cloudflare KV
+- **API Integration**: Single API call fetches only image data
+- **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects using KV config
 - **Server-Side Loading**: Fetches user-specific data based on request domain
 - **Infinite Scroll**: Lazy loads images with IntersectionObserver
 
@@ -191,32 +168,38 @@ src/
 
 1. **Request arrives** with domain (e.g., `example.com`)
 2. **Extract username** from domain (`example`)
-3. **Build API URL** (`/data/example/content.json`)
-4. **Fetch API data** (user info, config, images)
-5. **Generate config** (avatar URL, CDN settings)
-6. **Render page** with user-specific data
+3. **Fetch KV config** (`global` + `user:example`)
+4. **Build API URL** from KV config
+5. **Fetch images** from API
+6. **Render page** with KV config + API images
 
 ## Deployment
 
 ### Cloudflare Workers
 
-The application deploys as a single Cloudflare Worker. See the setup section for full `wrangler.jsonc` configuration including routes and environment variables.
+The application deploys as a single Cloudflare Worker with:
 
-### Environment Variables
+- **Cloudflare KV**: Stores all configuration (no secrets)
+- **No environment variables**: Everything in KV
+- **Auto-generated routes**: Based on `config/app.json`
 
-Only two environment variables are needed:
+The `pnpm deploy` command handles KV upload and wrangler config generation.
 
-- **`PUBLIC_API_BASE`**: Your API base URL (production)
-- **`PUBLIC_USER_NAME`**: Username for localhost development only
+## User Management
 
-Set these in your `wrangler.jsonc` file or in the Cloudflare Worker dashboard under Variables and Secrets.
+### Adding a User
 
-## Adding New Users
+1. **Edit `config/app.json`**: Add user entry with domain, name, and avatar
+2. **Create API endpoint**: Ensure `/data/USERNAME/content.json` returns images array
+3. **Deploy**: Run `pnpm deploy` to upload config to KV and deploy
+4. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
+5. **Done!** - No code changes needed
 
-1. **Create API endpoint**: Ensure `https://api.yourdomain.com/data/newuser/content.json` returns proper structure
-2. **Add domain routing**: Edit `wrangler.jsonc` to add routes for `newuser.com` and `admin.newuser.com`, then deploy
-3. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
-4. **Done!** - No code changes or secrets needed
+### Updating a User
+
+1. **Edit `config/app.json`**: Update user properties
+2. **Deploy**: Run `pnpm deploy` to sync changes to KV
+3. Changes take effect immediately
 
 ### Cloudflare Images Favicon Variants
 
