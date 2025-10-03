@@ -1,149 +1,112 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getAPIEndpoint, getConfigFromAPIResponse, type APIResponse } from './config';
-
-// Mock the environment module
-vi.mock('$env/dynamic/public', () => ({
-  env: {
-    PUBLIC_API_BASE: 'https://api.example.com',
-    PUBLIC_USER_NAME: 'test-user'
-  }
-}));
+import { describe, it, expect, vi } from 'vitest';
+import { extractUserFromDomain, getConfigFromKV } from './config';
 
 describe('config', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('getAPIEndpoint', () => {
+  describe('extractUserFromDomain', () => {
     it('extracts username from simple domain', () => {
-      const result = getAPIEndpoint('johndoe.com');
-      expect(result).toBe('https://api.example.com/data/johndoe/content.json');
+      const result = extractUserFromDomain('johndoe.com');
+      expect(result).toBe('johndoe');
     });
 
     it('extracts username from subdomain', () => {
-      const result = getAPIEndpoint('www.johndoe.com');
-      expect(result).toBe('https://api.example.com/data/johndoe/content.json');
+      const result = extractUserFromDomain('www.johndoe.com');
+      expect(result).toBe('johndoe');
     });
 
     it('extracts username from deep subdomain', () => {
-      const result = getAPIEndpoint('app.photos.johndoe.com');
-      expect(result).toBe('https://api.example.com/data/johndoe/content.json');
+      const result = extractUserFromDomain('app.photos.johndoe.com');
+      expect(result).toBe('johndoe');
     });
 
-    it('uses env variable for localhost', () => {
-      const result = getAPIEndpoint('localhost:3000');
-      expect(result).toBe('https://api.example.com/data/test-user/content.json');
+    it('handles localhost', () => {
+      const result = extractUserFromDomain('localhost:3000');
+      expect(result).toBe('unknown-user');
     });
 
-    it('uses env variable for 127.0.0.1', () => {
-      const result = getAPIEndpoint('127.0.0.1:5173');
-      expect(result).toBe('https://api.example.com/data/test-user/content.json');
+    it('handles 127.0.0.1', () => {
+      const result = extractUserFromDomain('127.0.0.1:5173');
+      expect(result).toBe('unknown-user');
     });
 
     it('handles single part domains', () => {
-      const result = getAPIEndpoint('localhost');
-      expect(result).toBe('https://api.example.com/data/test-user/content.json');
-    });
-
-    it('throws error when PUBLIC_API_BASE is missing', async () => {
-      // Reset modules and mock with undefined API_BASE
-      vi.resetModules();
-      vi.doMock('$env/dynamic/public', () => ({
-        env: {
-          PUBLIC_API_BASE: undefined,
-          PUBLIC_USER_NAME: 'test-user'
-        }
-      }));
-
-      // Dynamically import to get the mocked version
-      const { getAPIEndpoint: mockedGetAPIEndpoint } = await import('./config');
-
-      expect(() => mockedGetAPIEndpoint('example.com')).toThrow(
-        'PUBLIC_API_BASE environment variable is required'
-      );
+      const result = extractUserFromDomain('localhost');
+      expect(result).toBe('unknown-user');
     });
   });
 
-  describe('getConfigFromAPIResponse', () => {
-    const mockAPIResponse: APIResponse = {
-      user: {
-        name: 'John Doe',
-        avatar: {
-          id: 'avatar-123',
-          variant: 'profile'
-        }
-      },
-      config: {
-        imageBase: 'https://cdn.example.com',
-        imageVariant: 'gallery'
-      },
-      images: [
-        {
-          id: 'img-1',
-          name: 'Photo 1',
-          caption: 'A beautiful sunset',
-          taken: '2024-01-15T18:30:00Z',
-          uploaded: '2024-01-16T09:00:00Z'
-        }
-      ]
-    };
+  describe('getConfigFromKV', () => {
+    it('fetches and parses global and user config from KV', async () => {
+      const mockKV = {
+        get: vi.fn((key: string) => {
+          if (key === 'global') {
+            return Promise.resolve(
+              JSON.stringify({
+                apiBase: 'https://api.example.com',
+                imageBase: 'https://cdn.example.com',
+                imageVariant: 'gallery'
+              })
+            );
+          }
+          if (key === 'user:johndoe') {
+            return Promise.resolve(
+              JSON.stringify({
+                domain: 'johndoe.com',
+                avatar: {
+                  id: 'avatar-123',
+                  variant: 'profile'
+                }
+              })
+            );
+          }
+          return Promise.resolve(null);
+        })
+      } as unknown as KVNamespace;
 
-    it('transforms API response to UserConfig correctly', () => {
-      const result = getConfigFromAPIResponse(mockAPIResponse);
+      const result = await getConfigFromKV(mockKV, 'johndoe.com');
 
       expect(result).toEqual({
-        imgBase: 'https://cdn.example.com',
-        imgVariant: 'gallery',
-        userAvatar: 'https://cdn.example.com/avatar-123/profile',
-        userName: 'John Doe'
-      });
-    });
-
-    it('constructs avatar URL correctly', () => {
-      const response = {
-        ...mockAPIResponse,
+        global: {
+          apiBase: 'https://api.example.com',
+          imageBase: 'https://cdn.example.com',
+          imageVariant: 'gallery'
+        },
         user: {
-          ...mockAPIResponse.user,
+          domain: 'johndoe.com',
           avatar: {
-            id: 'different-avatar',
-            variant: 'thumbnail'
+            id: 'avatar-123',
+            variant: 'profile'
           }
         },
-        config: {
-          ...mockAPIResponse.config,
-          imageBase: 'https://images.cloudflare.com'
-        }
-      };
+        username: 'johndoe'
+      });
 
-      const result = getConfigFromAPIResponse(response);
-
-      expect(result.userAvatar).toBe('https://images.cloudflare.com/different-avatar/thumbnail');
+      expect(mockKV.get).toHaveBeenCalledWith('global');
+      expect(mockKV.get).toHaveBeenCalledWith('user:johndoe');
     });
 
-    it('handles minimal API response', () => {
-      const minimalResponse: APIResponse = {
-        user: {
-          name: '',
-          avatar: {
-            id: '',
-            variant: 'default'
+    it('throws error when global config is missing', async () => {
+      const mockKV = {
+        get: vi.fn(() => Promise.resolve(null))
+      } as unknown as KVNamespace;
+
+      await expect(getConfigFromKV(mockKV, 'johndoe.com')).rejects.toThrow(
+        'Global config not found in KV'
+      );
+    });
+
+    it('throws error when user config is missing', async () => {
+      const mockKV = {
+        get: vi.fn((key: string) => {
+          if (key === 'global') {
+            return Promise.resolve(JSON.stringify({ apiBase: 'https://api.example.com' }));
           }
-        },
-        config: {
-          imageBase: 'https://cdn.com',
-          imageVariant: 'default'
-        },
-        images: []
-      };
+          return Promise.resolve(null);
+        })
+      } as unknown as KVNamespace;
 
-      const result = getConfigFromAPIResponse(minimalResponse);
-
-      expect(result).toEqual({
-        imgBase: 'https://cdn.com',
-        imgVariant: 'default',
-        userAvatar: 'https://cdn.com//default',
-        userName: ''
-      });
+      await expect(getConfigFromKV(mockKV, 'johndoe.com')).rejects.toThrow(
+        'User config not found for: johndoe'
+      );
     });
   });
 });
