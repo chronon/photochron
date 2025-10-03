@@ -52,7 +52,10 @@ export interface APIResponse {
 }
 
 export function extractUserFromDomain(hostname: string): string {
-  if (hostname.startsWith('localhost') || hostname.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/)) {
+  if (
+    hostname.startsWith('localhost') ||
+    hostname.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/)
+  ) {
     return 'unknown-user';
   }
 

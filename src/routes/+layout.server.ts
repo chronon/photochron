@@ -3,7 +3,7 @@ import { getConfigFromKV } from '$lib/config';
 
 export const load: LayoutServerLoad = async ({ url, platform }) => {
   if (!platform?.env?.CHRONONAGRAM) {
-    throw new Error('KV namespace not available. Please run with `pnpm dev` (wrangler dev).');
+    throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
   const kvConfig = await getConfigFromKV(platform.env.CHRONONAGRAM, url.hostname);
