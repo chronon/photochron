@@ -8,18 +8,9 @@ on:
 permissions:
   contents: read
 
-env:
-  PUBLIC_IMG_BASE: 'https://imagedelivery.net/unique-hash'
-  PUBLIC_IMG_SOURCE: 'https://api.example.com/data/user/images.json'
-  PUBLIC_IMG_VARIANT: 'default'
-  PUBLIC_USER_AVATAR: 'https://imagedelivery.net/avatar-path'
-  PUBLIC_USER_NAME: 'username'
-
 jobs:
   check-test:
     runs-on: ubuntu-latest
-    container:
-      image: mcr.microsoft.com/playwright:v1.55.1-noble
 
     strategy:
       matrix:
@@ -44,5 +35,5 @@ jobs:
       - name: Check
         run: pnpm run check
 
-      - name: Unit tests
-        run: pnpm run test:unit --run
+      - name: Test
+        run: pnpm run test --run

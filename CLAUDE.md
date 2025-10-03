@@ -13,9 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Testing & Quality
 
-- `pnpm test` - Run all tests (unit + e2e)
-- `pnpm test:unit` - Run unit tests with Vitest
-- `pnpm test:e2e` - Run e2e tests with Playwright
+- `pnpm test` - Run unit tests with Vitest
 - `pnpm check` - Type check with svelte-check
 - `pnpm lint` - Check formatting and linting with Prettier + ESLint
 - `pnpm format` - Format code with Prettier
@@ -28,7 +26,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Development Workflow
 
 - Use `pnpm check` and `pnpm lint` before committing changes
-- E2E tests build and preview the app on port 4173 before running
 
 ## Architecture
 
@@ -75,7 +72,6 @@ Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
 - SvelteKit 2.x with TypeScript and Svelte 5
 - Tailwind CSS 4.x with Vite plugin
 - Vitest for unit testing
-- Playwright for e2e testing
 - Cloudflare Workers deployment target with adapter-cloudflare
 
 ### File Structure
