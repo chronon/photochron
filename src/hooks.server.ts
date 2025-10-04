@@ -1,8 +1,8 @@
 import type { Handle } from '@sveltejs/kit';
-import { getAPIEndpoint, getConfigFromAPIResponse } from '$lib/config';
+import { getConfigFromKV } from '$lib/config';
 
 export const handle: Handle = async ({ event, resolve }) => {
-  const { url } = event;
+  const { url, platform } = event;
 
   const faviconMatch = url.pathname.match(
     /^\/(favicon-(\d+)x\d+\.png|apple-touch-icon\.png|favicon\.ico)$/
@@ -10,34 +10,33 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (faviconMatch) {
     try {
-      const apiEndpoint = getAPIEndpoint(url.hostname);
-      const response = await fetch(apiEndpoint);
-
-      if (response.ok) {
-        const apiResponse = await response.json();
-        const config = getConfigFromAPIResponse(apiResponse);
-
-        let variant: string;
-        if (url.pathname === '/apple-touch-icon.png') {
-          variant = 'apple180';
-        } else if (url.pathname === '/favicon.ico') {
-          variant = 'favicon32';
-        } else if (faviconMatch[2]) {
-          variant = `favicon${faviconMatch[2]}`;
-        } else {
-          variant = 'favicon32';
-        }
-
-        const faviconUrl = `${config.imgBase}/${apiResponse.user.avatar.id}/${variant}`;
-
-        return new Response(null, {
-          status: 302,
-          headers: {
-            Location: faviconUrl,
-            'Cache-Control': 'public, max-age=3600'
-          }
-        });
+      if (!platform?.env?.CHRONONAGRAM) {
+        throw new Error('KV namespace not available');
       }
+
+      const kvConfig = await getConfigFromKV(platform.env.CHRONONAGRAM, url.hostname);
+      const { global, user } = kvConfig;
+
+      let variant: string;
+      if (url.pathname === '/apple-touch-icon.png') {
+        variant = 'apple180';
+      } else if (url.pathname === '/favicon.ico') {
+        variant = 'favicon32';
+      } else if (faviconMatch[2]) {
+        variant = `favicon${faviconMatch[2]}`;
+      } else {
+        variant = 'favicon32';
+      }
+
+      const faviconUrl = `${global.imageBase}/${user.avatar.id}/${variant}`;
+
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: faviconUrl,
+          'Cache-Control': 'public, max-age=3600'
+        }
+      });
     } catch (error) {
       console.error('Favicon redirect failed:', error);
       const fallbackMap = {
