@@ -17,11 +17,10 @@
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
     "test": "vitest --run",
-    "deploy": "pnpm predeploy && pnpm build && wrangler deploy",
-    "deploy:preview": "pnpm predeploy && pnpm build && wrangler deploy --dry-run",
-    "kv:build": "tsx scripts/build-kv.ts",
-    "kv:deploy": "wrangler kv bulk put --binding=CHRONONAGRAM --local config/app.kv.json && wrangler kv bulk put --binding=CHRONONAGRAM --remote config/app.kv.json",
-    "predeploy": "tsx scripts/predeploy.ts && pnpm kv:build && pnpm kv:deploy"
+    "config:build": "tsx scripts/build-config.ts",
+    "config:deploy": "pnpm config:build && tsx scripts/deploy-kv.ts",
+    "deploy": "pnpm config:deploy && pnpm build && wrangler deploy",
+    "deploy:preview": "pnpm config:deploy && pnpm build && wrangler deploy --dry-run"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251001.0",

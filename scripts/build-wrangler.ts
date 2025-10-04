@@ -6,10 +6,10 @@ import { parse as parseJsonc } from 'jsonc-parser';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const appConfigPath = join(__dirname, '..', 'config', 'app.json');
+const appConfigPath = join(__dirname, '..', 'config', 'app.jsonc');
 const wranglerTemplatePath = join(__dirname, '..', 'wrangler.jsonc.example');
 const wranglerOutputPath = join(__dirname, '..', 'wrangler.jsonc');
-const appConfig = JSON.parse(readFileSync(appConfigPath, 'utf-8'));
+const appConfig = parseJsonc(readFileSync(appConfigPath, 'utf-8'));
 const wranglerTemplate = parseJsonc(readFileSync(wranglerTemplatePath, 'utf-8')) as Record<
   string,
   unknown

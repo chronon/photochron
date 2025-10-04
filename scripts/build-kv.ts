@@ -1,10 +1,11 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { parse as parseJsonc } from 'jsonc-parser';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const configPath = join(__dirname, '..', 'config', 'app.json');
-const config = JSON.parse(readFileSync(configPath, 'utf-8'));
+const configPath = join(__dirname, '..', 'config', 'app.jsonc');
+const config = parseJsonc(readFileSync(configPath, 'utf-8'));
 
 const kvData = [
   {
