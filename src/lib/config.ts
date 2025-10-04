@@ -54,10 +54,7 @@ export interface APIResponse {
 export function extractUserFromDomain(hostname: string): string {
   const hostWithoutPort = hostname.split(':')[0];
 
-  if (
-    hostWithoutPort.startsWith('localhost') ||
-    hostWithoutPort.match(/^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$/)
-  ) {
+  if (hostWithoutPort.startsWith('localhost')) {
     return 'unknown-user';
   }
 

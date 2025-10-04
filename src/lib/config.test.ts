@@ -23,11 +23,6 @@ describe('config', () => {
       expect(result).toBe('unknown-user');
     });
 
-    it('handles 127.0.0.1', () => {
-      const result = extractUserFromDomain('127.0.0.1:5173');
-      expect(result).toBe('unknown-user');
-    });
-
     it('handles single part domains', () => {
       const result = extractUserFromDomain('localhost');
       expect(result).toBe('unknown-user');
