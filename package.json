@@ -8,7 +8,8 @@
     "pnpm": ">=10.0.0"
   },
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "vite dev",
+    "dev:wrangler": "vite build && wrangler dev --local",
     "build": "vite build",
     "preview": "wrangler dev --local",
     "prepare": "svelte-kit sync || echo ''",

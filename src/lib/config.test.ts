@@ -4,28 +4,28 @@ import { extractUserFromDomain, getConfigFromKV } from './config';
 describe('config', () => {
   describe('extractUserFromDomain', () => {
     it('extracts username from simple domain', () => {
-      const result = extractUserFromDomain('johndoe.com');
+      const result = extractUserFromDomain('johndoe.com', 'dev-user');
       expect(result).toBe('johndoe');
     });
 
     it('extracts username from subdomain', () => {
-      const result = extractUserFromDomain('www.johndoe.com');
+      const result = extractUserFromDomain('www.johndoe.com', 'dev-user');
       expect(result).toBe('johndoe');
     });
 
     it('extracts username from deep subdomain', () => {
-      const result = extractUserFromDomain('app.photos.johndoe.com');
+      const result = extractUserFromDomain('app.photos.johndoe.com', 'dev-user');
       expect(result).toBe('johndoe');
     });
 
     it('handles localhost', () => {
-      const result = extractUserFromDomain('localhost:3000');
-      expect(result).toBe('unknown-user');
+      const result = extractUserFromDomain('localhost:3000', 'dev-user');
+      expect(result).toBe('dev-user');
     });
 
     it('handles single part domains', () => {
-      const result = extractUserFromDomain('localhost');
-      expect(result).toBe('unknown-user');
+      const result = extractUserFromDomain('localhost', 'dev-user');
+      expect(result).toBe('dev-user');
     });
   });
 

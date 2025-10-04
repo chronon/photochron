@@ -19,7 +19,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   }>;
 
   try {
-    const response = await fetch(apiEndpoint, { method: 'GET' });
+    const response = await fetch(apiEndpoint);
     if (!response.ok) {
       throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
     }
@@ -34,7 +34,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
     imgBase: global.imageBase,
     imgVariant: global.imageVariant,
     userAvatar: `${global.imageBase}/${user.avatar.id}/${user.avatar.variant}`,
-    userName: user.domain
+    userName: user.profile.name
   };
 
   return {

@@ -2,10 +2,14 @@ export interface GlobalKVConfig {
   apiBase: string;
   imageBase: string;
   imageVariant: string;
+  devUser: string;
 }
 
 export interface UserKVConfig {
   domain: string;
+  profile: {
+    name: string;
+  };
   avatar: {
     id: string;
     variant: string;
@@ -51,11 +55,11 @@ export interface APIResponse {
   }>;
 }
 
-export function extractUserFromDomain(hostname: string): string {
+export function extractUserFromDomain(hostname: string, devUser: string): string {
   const hostWithoutPort = hostname.split(':')[0];
 
   if (hostWithoutPort.startsWith('localhost')) {
-    return 'unknown-user';
+    return devUser;
   }
 
   const parts = hostWithoutPort.split('.');
@@ -67,25 +71,26 @@ export function extractUserFromDomain(hostname: string): string {
     return parts[parts.length - 2];
   }
 
-  return 'unknown-user';
+  return devUser;
 }
 
 export async function getConfigFromKV(
   kv: KVNamespace,
   hostname: string
 ): Promise<{ global: GlobalKVConfig; user: UserKVConfig; username: string }> {
-  const username = extractUserFromDomain(hostname);
-
-  const [globalJson, userJson] = await Promise.all([kv.get('global'), kv.get(`user:${username}`)]);
-
+  const globalJson = await kv.get('global');
   if (!globalJson) {
     throw new Error('Global config not found in KV');
   }
+
+  const global = JSON.parse(globalJson) as GlobalKVConfig;
+  const username = extractUserFromDomain(hostname, global.devUser);
+  const userJson = await kv.get(`user:${username}`);
+
   if (!userJson) {
     throw new Error(`User config not found for: ${username}`);
   }
 
-  const global = JSON.parse(globalJson) as GlobalKVConfig;
   const user = JSON.parse(userJson) as UserKVConfig;
 
   return { global, user, username };
