@@ -9,11 +9,12 @@
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
 - **Subdomain support** - `admin.example.com` also shows example's photos
-- **Dynamic configuration** - All user config (CDN, avatars, images) comes from API
+- **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
+- **Dynamic content** - Images fetched from API per user
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery
-- **Zero configuration** - Add new users by just adding their domain
+- **Zero secrets** - No environment variables or API keys needed
 
 ### Key Information
 
@@ -50,32 +51,53 @@ pnpm format                 # Auto-format code
 # Build & Test
 pnpm build                  # Production build (~6s)
 pnpm preview                # Preview production build
-pnpm test:unit              # Vitest unit tests (~1s)
-pnpm test:e2e               # Playwright e2e tests (requires: pnpm exec playwright install)
-pnpm test                   # Run all tests
+pnpm test                   # Run unit tests with Vitest
 
-# Deployment
-pnpm deploy                 # Build and deploy to Cloudflare Workers
+# Configuration & Deployment
+pnpm config:build           # Generate wrangler.jsonc and KV data from config/app.jsonc
+pnpm config:deploy          # Build config and upload KV data to Cloudflare
+pnpm deploy                 # Full deployment (config + build + deploy)
 pnpm deploy:preview         # Dry run deployment
 ```
 
-### Environment Setup
+### Configuration Setup
 
-**Required**: Copy `.env-example` to `.env` and configure:
+**Required**: Copy `config/app-example.json` to `config/app.jsonc` and configure:
 
-```bash
-# MUST be set for development
-PUBLIC_API_BASE="https://api.yourdomain.com"     # Your API endpoint
-PUBLIC_USER_NAME="test-user"                     # For localhost testing only
+```jsonc
+{
+  "global": {
+    "apiBase": "https://api.yourdomain.com",
+    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
+    "imageVariant": "default"
+  },
+  "wrangler": {
+    "kv_namespaces": [
+      {
+        "binding": "CHRONONAGRAM",
+        "id": "your-kv-namespace-id"
+      }
+    ]
+  },
+  "users": {
+    "username": {
+      "domain": "example.com",
+      "avatar": { "id": "image-id", "variant": "default" }
+    }
+  }
+}
 ```
+
+- Configuration stored in Cloudflare KV (not environment variables)
+- JSONC format supports comments
+- Build scripts automatically generate `wrangler.jsonc` and KV data
 
 ### Common Issues and Workarounds
 
 1. **ESLint Warning**: Ignore `.eslintignore` deprecation warning - configuration works correctly
 2. **pnpm build scripts**: ALWAYS approve all packages when prompted or build will fail
-3. **Playwright tests**: Require `pnpm exec playwright install` before first run
-4. **Environment variables**: Build fails without proper `.env` file
-5. **E2E tests timeout**: Normal when API endpoint is unreachable
+3. **Configuration file**: Must create `config/app.jsonc` from example before deployment
+4. **KV namespace**: Must create Cloudflare KV namespace and add ID to config
 
 ## Project Architecture and Layout
 
@@ -84,38 +106,49 @@ PUBLIC_USER_NAME="test-user"                     # For localhost testing only
 - **SvelteKit 2.x** with TypeScript and Svelte 5
 - **Tailwind CSS 4.x** with Vite plugin
 - **Vitest** for unit testing
-- **Playwright** for e2e testing
 - **Cloudflare Workers** deployment with adapter-cloudflare
+- **Cloudflare KV** for configuration storage
 
 ### Key Directories and Files
 
 #### Configuration Files (Root)
 
 - `package.json` - Scripts and dependencies
-- `wrangler.jsonc` - Cloudflare Workers deployment config
+- `wrangler.jsonc` - Auto-generated Cloudflare Workers deployment config
 - `svelte.config.js` - SvelteKit configuration
 - `vite.config.ts` - Vite build configuration
 - `tsconfig.json` - TypeScript configuration
 - `eslint.config.js` - ESLint rules (flat config format)
 - `.prettierrc` - Prettier formatting rules
-- `playwright.config.ts` - E2E test configuration
+
+#### Configuration Directory (`config/`)
+
+- `app.jsonc` - Source of truth for all configuration (JSONC format, gitignored)
+- `app-example.json` - Example configuration template
+- `app.kv.json` - Auto-generated KV data for upload
+
+#### Build Scripts (`scripts/`)
+
+- `build-config.ts` - Master build script that runs wrangler and KV generators
+- `build-wrangler.ts` - Generates `wrangler.jsonc` from `app.jsonc`
+- `build-kv.ts` - Generates `app.kv.json` from `app.jsonc`
+- `deploy-kv.ts` - Uploads KV data to Cloudflare (local and remote)
 
 #### Source Structure (`src/`)
 
 ```
 src/
 ├── lib/
-│   ├── config.ts              # Domain parsing & API response handling
-│   ├── apiCache.ts           # API response caching
+│   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
-│   ├── +layout.server.ts     # Domain-to-user detection & API config loading
+│   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, API image fetching
 │   ├── +layout.svelte        # Site header with user info
-│   ├── +layout.ts            # Client-side layout configuration
 │   ├── +page.server.ts       # Image data passing with validation
 │   └── +page.svelte          # Main photo gallery with infinite scroll
-├── hooks.server.ts           # Dynamic favicon handling (intercepts favicon requests)
+├── hooks.server.ts           # Dynamic favicon handling using KV config
 ├── app.html                  # HTML template with favicon links
+├── app.d.ts                  # TypeScript ambient declarations (Cloudflare KV bindings)
 └── app.css                   # Global styles
 ```
 
@@ -125,22 +158,36 @@ src/
 
 #### Test Structure
 
-- `src/index.test.ts` - Unit test example (Vitest)
-- `e2e/home.test.ts` - E2E test (Playwright)
+- `src/lib/config.test.ts` - Unit tests for config module (Vitest)
+- `src/lib/InfiniteScroll.svelte.test.ts` - Component tests (Vitest + vitest-browser-svelte)
 
-### API Integration Pattern
+### Configuration & API Integration
 
-The application fetches configuration from: `${PUBLIC_API_BASE}/data/${username}/content.json`
+**Configuration (from Cloudflare KV):**
+- **Global config** (`global` key): API base URL, image CDN settings
+- **User config** (`user:USERNAME` key): Domain, avatar per user
+
+**API Integration:**
+
+The application fetches only image data from: `${apiBase}/data/${username}/content.json`
 
 Expected API response structure:
 
 ```json
 {
-  "user": { "name": "username", "avatar": { "id": "image-id", "variant": "default" } },
-  "config": { "imageBase": "https://cdn.domain", "imageVariant": "default" },
-  "images": [...]
+  "images": [
+    {
+      "id": "example-image-id",
+      "name": "Sample Photo",
+      "caption": "A beautiful sunset photo",
+      "taken": "2025-01-15T18:30:00-05:00",
+      "uploaded": "2025-01-15T20:15:00-05:00"
+    }
+  ]
 }
 ```
+
+Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
 
 ### Domain-Based Routing
 
@@ -149,16 +196,16 @@ Expected API response structure:
 
 ### Dynamic Favicon System
 
-SvelteKit hooks (`src/hooks.server.ts`) intercept favicon requests and redirect to user-specific Cloudflare Images variants (`favicon16`, `favicon32`, `apple180`).
+SvelteKit hooks (`src/hooks.server.ts`) intercept favicon requests, load avatar ID from KV, and redirect to user-specific Cloudflare Images variants (`favicon16`, `favicon32`, `apple180`). Falls back to static files if KV fetch fails.
 
 ## Continuous Integration
 
 ### GitHub Actions (`.github/workflows/ci.yml`)
 
 - **Triggers**: All branches except `main`
-- **Environment**: Uses Playwright container with Node.js 22.x
-- **Steps**: Install pnpm → Install deps → Type check
-- **Note**: Tests are currently commented out in CI
+- **Environment**: Node.js 22.x
+- **Steps**: Install pnpm → Install deps → Type check → Run tests
+- **Note**: Deployment requires Cloudflare KV configuration
 
 ### Pre-commit Requirements
 
@@ -188,10 +235,12 @@ Both commands MUST pass or CI will fail.
 ### Development Notes
 
 1. **Always use pnpm** - npm/yarn will not work correctly
-2. **Environment variables are required** - App will not build without `.env`
-3. **Type checking is strict** - All TypeScript errors must be resolved
-4. **Formatting is enforced** - Code must pass Prettier checks
-5. **E2E tests build the app** - They run `pnpm build && pnpm preview` first
+2. **Configuration file required** - Create `config/app.jsonc` from example before deployment
+3. **KV bindings** - App runs in Cloudflare Workers with KV namespace bindings
+4. **Type checking is strict** - All TypeScript errors must be resolved
+5. **Formatting is enforced** - Code must pass Prettier checks
+6. **Auto-generated files** - Never manually edit `wrangler.jsonc` or `config/app.kv.json`
+7. **Deploy process** - Always use `pnpm deploy` which handles config generation and KV upload
 
 ## Instructions for Agents
 
@@ -213,7 +262,9 @@ Both commands MUST pass or CI will fail.
 - **Adding features**: Follow existing patterns in `src/routes/` and `src/lib/`
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
-- **Configuration**: Modify files in project root, always test build process
+- **Adding users**: Edit `config/app.jsonc`, then run `pnpm deploy`
+- **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
+- **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
 
 **Platform considerations:**
 
