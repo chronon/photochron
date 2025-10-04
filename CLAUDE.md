@@ -18,10 +18,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm lint` - Check formatting and linting with Prettier + ESLint
 - `pnpm format` - Format code with Prettier
 
-### Deployment
+### Configuration & Deployment
 
-- `pnpm deploy` - Build and deploy to Cloudflare Workers
-- `pnpm deploy:preview` - Build and preview deployment (dry run)
+- `pnpm config:build` - Generate wrangler.jsonc and KV data from config/app.jsonc
+- `pnpm config:deploy` - Build config and upload KV data to Cloudflare
+- `pnpm deploy` - Full deployment (build config, upload KV, build app, deploy to Workers)
+- `pnpm deploy:preview` - Preview deployment (dry run)
 
 ### Development Workflow
 
@@ -55,9 +57,10 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Cloudflare KV Storage** - Stores global and per-user configuration at deployment time
 - **KV Keys**:
   - `global` - API base URL, image CDN settings
-  - `user:USERNAME` - Domain, name, avatar per user
+  - `user:USERNAME` - Domain, avatar per user
 - **No environment variables** - All config in KV
-- **Deploy-time configuration** - `config/app.json` → KV upload → deployment
+- **Deploy-time configuration** - `config/app.jsonc` (JSONC format with comments support) → Build scripts → KV upload → deployment
+- **Build scripts** - Automated scripts transform `app.jsonc` into `wrangler.jsonc` and `app.kv.json`
 
 ### API Integration
 
@@ -82,8 +85,14 @@ Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
 - `src/hooks.server.ts` - Dynamic favicon handling using KV config
-- `wrangler.jsonc` - Auto-generated from config/app.json at deploy time
-- `config/app.json` - Source of truth for all configuration (gitignored)
+- `config/app.jsonc` - Source of truth for all configuration (JSONC format, gitignored)
+- `config/app-example.json` - Example configuration template
+- `scripts/build-config.ts` - Master build script that runs wrangler and KV generators
+- `scripts/build-wrangler.ts` - Generates `wrangler.jsonc` from `app.jsonc`
+- `scripts/build-kv.ts` - Generates `app.kv.json` from `app.jsonc`
+- `scripts/deploy-kv.ts` - Uploads KV data to Cloudflare (local and remote)
+- `wrangler.jsonc` - Auto-generated at deploy time from config/app.jsonc
+- `config/app.kv.json` - Auto-generated KV data for upload
 
 ### Dynamic Favicon System
 

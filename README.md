@@ -40,10 +40,10 @@ pnpm install
 Copy the example configuration and customize it:
 
 ```bash
-cp config/app-example.json config/app.json
+cp config/app-example.json config/app.jsonc
 ```
 
-Edit `config/app.json` with your settings:
+Edit `config/app.jsonc` with your settings (JSONC format supports comments):
 
 - Update `global.apiBase` with your API endpoint
 - Update `global.imageBase` with your Cloudflare Images delivery URL
@@ -64,15 +64,17 @@ pnpm deploy
 
 This will:
 
-1. Generate KV data from `config/app.json`
-2. Upload configuration to Cloudflare KV
-3. Generate `wrangler.jsonc` with routes
-4. Build and deploy to Cloudflare Workers
+1. Run build scripts to transform `config/app.jsonc`
+2. Generate `wrangler.jsonc` with routes for all user domains
+3. Generate `config/app.kv.json` with KV entries
+4. Upload configuration to Cloudflare KV (local and remote)
+5. Build SvelteKit application
+6. Deploy to Cloudflare Workers
 
 ## Adding New Users
 
-1. **Edit `config/app.json`**: Add new user to the `users` object
-2. **Deploy**: Run `pnpm deploy` to upload config and deploy
+1. **Edit `config/app.jsonc`**: Add new user to the `users` object
+2. **Deploy**: Run `pnpm deploy` to generate config, upload to KV, and deploy
 3. **Done!** - The new domain will automatically work
 
 ## Configuration
@@ -82,9 +84,9 @@ This will:
 Configuration is stored in Cloudflare KV with these keys:
 
 - **`global`**: Global config (API base, image CDN settings)
-- **`user:USERNAME`**: Per-user config (domain, name, avatar)
+- **`user:USERNAME`**: Per-user config (domain, avatar)
 
-These are automatically generated from `config/app.json` during deployment.
+These are automatically generated from `config/app.jsonc` during deployment via build scripts.
 
 ### API Requirements
 
@@ -129,12 +131,13 @@ pnpm lint                   # Check formatting and linting
 pnpm format                 # Format code with Prettier
 
 # Testing
-pnpm test                   # Run all tests
-pnpm test:unit              # Run unit tests
-pnpm test:e2e               # Run end-to-end tests
+pnpm test                   # Run unit tests with Vitest
 
-# Deployment
-pnpm deploy                 # Build and deploy to Cloudflare
+# Configuration & Deployment
+pnpm config:build           # Generate wrangler.jsonc and KV data
+pnpm config:deploy          # Build config and upload to KV
+pnpm deploy                 # Full deployment (config + build + deploy)
+pnpm deploy:preview         # Preview deployment (dry run)
 ```
 
 ## Architecture
@@ -142,6 +145,15 @@ pnpm deploy                 # Build and deploy to Cloudflare
 ### File Structure
 
 ```
+config/
+├── app.jsonc               # Source configuration (JSONC with comments)
+├── app-example.json        # Example configuration template
+├── app.kv.json             # Auto-generated KV data for upload
+scripts/
+├── build-config.ts         # Master build script
+├── build-wrangler.ts       # Generates wrangler.jsonc
+├── build-kv.ts             # Generates app.kv.json
+└── deploy-kv.ts            # Uploads KV data to Cloudflare
 src/
 ├── lib/
 │   ├── config.ts           # Domain-to-user configuration logic
@@ -153,6 +165,7 @@ src/
 │   └── +page.svelte        # Main photo gallery
 ├── hooks.server.ts         # Dynamic favicon handling
 └── app.html                # HTML template with favicon links
+wrangler.jsonc              # Auto-generated Cloudflare Workers config
 ```
 
 ### Key Components
@@ -166,6 +179,14 @@ src/
 
 ### Configuration Flow
 
+**At Deployment:**
+1. **Edit `config/app.jsonc`** with user configuration
+2. **Run build scripts** (`scripts/build-*.ts`) to transform config
+3. **Generate `wrangler.jsonc`** with routes and KV bindings
+4. **Generate `app.kv.json`** with KV entries
+5. **Upload to KV** using wrangler CLI
+
+**At Runtime:**
 1. **Request arrives** with domain (e.g., `example.com`)
 2. **Extract username** from domain (`example`)
 3. **Fetch KV config** (`global` + `user:example`)
@@ -181,25 +202,26 @@ The application deploys as a single Cloudflare Worker with:
 
 - **Cloudflare KV**: Stores all configuration (no secrets)
 - **No environment variables**: Everything in KV
-- **Auto-generated routes**: Based on `config/app.json`
+- **Auto-generated routes**: Based on `config/app.jsonc`, includes both primary domain and `admin.` subdomain per user
+- **TypeScript build scripts**: Automated config transformation and KV upload
 
-The `pnpm deploy` command handles KV upload and wrangler config generation.
+The `pnpm deploy` command orchestrates the entire process: config generation → KV upload → app build → worker deployment.
 
 ## User Management
 
 ### Adding a User
 
-1. **Edit `config/app.json`**: Add user entry with domain, name, and avatar
+1. **Edit `config/app.jsonc`**: Add user entry with domain and avatar
 2. **Create API endpoint**: Ensure `/data/USERNAME/content.json` returns images array
-3. **Deploy**: Run `pnpm deploy` to upload config to KV and deploy
+3. **Deploy**: Run `pnpm deploy` to generate config, upload to KV, and deploy
 4. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
-5. **Done!** - No code changes needed
+5. **Done!** - No code changes needed; routes are auto-generated
 
 ### Updating a User
 
-1. **Edit `config/app.json`**: Update user properties
-2. **Deploy**: Run `pnpm deploy` to sync changes to KV
-3. Changes take effect immediately
+1. **Edit `config/app.jsonc`**: Update user properties
+2. **Deploy**: Run `pnpm deploy` to regenerate and sync changes to KV
+3. Changes take effect immediately after deployment
 
 ### Cloudflare Images Favicon Variants
 
