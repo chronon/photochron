@@ -14,6 +14,7 @@ export interface UserKVConfig {
     id: string;
     variant: string;
   };
+  authorized_client_ids: string[];
 }
 
 /**

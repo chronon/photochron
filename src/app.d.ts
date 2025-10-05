@@ -8,6 +8,9 @@ declare global {
     interface Platform {
       env: {
         CHRONONAGRAM: KVNamespace;
+        chrononagram: D1Database;
+        CF_ACCOUNT_ID: string;
+        CF_IMAGES_TOKEN: string;
       };
     }
   }
