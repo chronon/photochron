@@ -2,7 +2,6 @@ export interface GlobalKVConfig {
   apiBase: string;
   imageBase: string;
   imageVariant: string;
-  devUser: string;
 }
 
 export interface UserKVConfig {
@@ -56,10 +55,13 @@ export interface APIResponse {
   }>;
 }
 
-export function extractUserFromDomain(hostname: string, devUser: string): string {
+export function extractUserFromDomain(hostname: string, devUser?: string): string {
   const hostWithoutPort = hostname.split(':')[0];
 
   if (hostWithoutPort.startsWith('localhost')) {
+    if (!devUser) {
+      throw new Error('DEV_USER environment variable must be set for localhost development');
+    }
     return devUser;
   }
 
@@ -72,12 +74,13 @@ export function extractUserFromDomain(hostname: string, devUser: string): string
     return parts[parts.length - 2];
   }
 
-  return devUser;
+  throw new Error(`Cannot extract username from domain: ${hostname}`);
 }
 
 export async function getConfigFromKV(
   kv: KVNamespace,
-  hostname: string
+  hostname: string,
+  devUser?: string
 ): Promise<{ global: GlobalKVConfig; user: UserKVConfig; username: string }> {
   const globalJson = await kv.get('global');
   if (!globalJson) {
@@ -85,7 +88,7 @@ export async function getConfigFromKV(
   }
 
   const global = JSON.parse(globalJson) as GlobalKVConfig;
-  const username = extractUserFromDomain(hostname, global.devUser);
+  const username = extractUserFromDomain(hostname, devUser);
   const userJson = await kv.get(`user:${username}`);
 
   if (!userJson) {

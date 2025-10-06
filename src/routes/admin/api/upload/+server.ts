@@ -206,6 +206,22 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
 
   const { CHRONONAGRAM, chrononagram: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
 
+  if (!CHRONONAGRAM) {
+    return errorResponse('Configuration error', 500, 'CHRONONAGRAM KV binding not available');
+  }
+
+  if (!db) {
+    return errorResponse('Configuration error', 500, 'D1 database binding not available');
+  }
+
+  if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {
+    return errorResponse(
+      'Configuration error',
+      500,
+      'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN'
+    );
+  }
+
   // 2. Verify Cloudflare Access authentication
   const clientId = request.headers.get('Cf-Access-Client-Id');
   if (!clientId) {
@@ -216,14 +232,8 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     );
   }
 
-  // 3. Load configuration and extract username
-  const globalConfigJson = await CHRONONAGRAM.get('global');
-  if (!globalConfigJson) {
-    return errorResponse('Configuration error', 500, 'Global config not found in KV');
-  }
-
-  const globalConfig = JSON.parse(globalConfigJson) as { devUser: string };
-  const username = extractUserFromDomain(url.hostname, globalConfig.devUser);
+  // 3. Extract username from domain
+  const username = extractUserFromDomain(url.hostname, platform.env.DEV_USER);
 
   console.log(`${LOG_PREFIX} Upload request from client ${clientId} for user ${username}`);
 

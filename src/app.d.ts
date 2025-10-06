@@ -11,6 +11,7 @@ declare global {
         chrononagram: D1Database;
         CF_ACCOUNT_ID: string;
         CF_IMAGES_TOKEN: string;
+        DEV_USER?: string;
       };
     }
   }

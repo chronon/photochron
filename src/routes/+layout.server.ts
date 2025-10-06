@@ -6,7 +6,11 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
-  const kvConfig = await getConfigFromKV(platform.env.CHRONONAGRAM, url.hostname);
+  const kvConfig = await getConfigFromKV(
+    platform.env.CHRONONAGRAM,
+    url.hostname,
+    platform.env.DEV_USER
+  );
   const { global, user, username } = kvConfig;
 
   const apiEndpoint = `${global.apiBase}/data/${username}/content.json`;
