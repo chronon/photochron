@@ -48,7 +48,6 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                apiBase: 'https://api.example.com',
                 imageBase: 'https://cdn.example.com',
                 imageVariant: 'gallery'
               })
@@ -58,10 +57,14 @@ describe('config', () => {
             return Promise.resolve(
               JSON.stringify({
                 domain: 'johndoe.com',
+                profile: {
+                  name: 'John Doe'
+                },
                 avatar: {
                   id: 'avatar-123',
                   variant: 'profile'
-                }
+                },
+                authorized_client_ids: []
               })
             );
           }
@@ -73,16 +76,19 @@ describe('config', () => {
 
       expect(result).toEqual({
         global: {
-          apiBase: 'https://api.example.com',
           imageBase: 'https://cdn.example.com',
           imageVariant: 'gallery'
         },
         user: {
           domain: 'johndoe.com',
+          profile: {
+            name: 'John Doe'
+          },
           avatar: {
             id: 'avatar-123',
             variant: 'profile'
-          }
+          },
+          authorized_client_ids: []
         },
         username: 'johndoe'
       });
@@ -105,7 +111,12 @@ describe('config', () => {
       const mockKV = {
         get: vi.fn((key: string) => {
           if (key === 'global') {
-            return Promise.resolve(JSON.stringify({ apiBase: 'https://api.example.com' }));
+            return Promise.resolve(
+              JSON.stringify({
+                imageBase: 'https://cdn.example.com',
+                imageVariant: 'gallery'
+              })
+            );
           }
           return Promise.resolve(null);
         })

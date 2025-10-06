@@ -215,11 +215,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
   }
 
   if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {
-    return errorResponse(
-      'Configuration error',
-      500,
-      'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN'
-    );
+    return errorResponse('Configuration error', 500, 'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN');
   }
 
   // 2. Verify Cloudflare Access authentication

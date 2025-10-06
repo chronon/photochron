@@ -9,9 +9,31 @@
 
   let { data }: Props = $props();
 
-  let increment = 2;
-  let count = $state(increment);
-  const loadMore = () => (count += increment);
+  let allImages = $state([...data.images]);
+  let hasMore = $state(data.images.length === 5);
+  let isLoading = $state(false);
+
+  const loadMore = async () => {
+    if (isLoading || !hasMore) return;
+
+    isLoading = true;
+    try {
+      const response = await fetch(`/api/images?offset=${allImages.length}`);
+      const result = (await response.json()) as {
+        images: typeof allImages;
+        hasMore: boolean;
+      };
+
+      if (result.images && result.images.length > 0) {
+        allImages = [...allImages, ...result.images];
+      }
+      hasMore = result.hasMore;
+    } catch (error) {
+      console.error('Failed to load more images:', error);
+    } finally {
+      isLoading = false;
+    }
+  };
 
   let loadedImages = new SvelteSet<string>();
   const handleImageLoad = (imageId: string) => {
@@ -19,7 +41,7 @@
   };
 </script>
 
-{#each data.images.slice(0, count) as image (image.id)}
+{#each allImages as image (image.id)}
   <div class="mx-auto mb-8 max-w-5xl rounded-lg contain-layout contain-style">
     <div class="flex items-center p-2">
       <div class="mr-2 h-8 w-8 flex-shrink-0 rounded-full bg-gray-200">
@@ -58,4 +80,4 @@
   </div>
 {/each}
 
-<InfiniteScroll hasMore={count < data.images.length} threshold={200} on:loadMore={loadMore} />
+<InfiniteScroll {hasMore} threshold={200} on:loadMore={loadMore} />
