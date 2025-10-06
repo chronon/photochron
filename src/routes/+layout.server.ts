@@ -1,6 +1,8 @@
 import type { LayoutServerLoad } from './$types';
 import { getConfigFromKV } from '$lib/config';
 
+const PAGE_SIZE = 5;
+
 export const load: LayoutServerLoad = async ({ url, platform }) => {
   if (!platform?.env?.CHRONONAGRAM) {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
@@ -27,8 +29,8 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
 
   try {
     const result = await platform.env.chrononagram
-      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT 5')
-      .bind(username)
+      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?')
+      .bind(username, PAGE_SIZE)
       .all();
 
     images = result.results as typeof images;

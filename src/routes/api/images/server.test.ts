@@ -164,7 +164,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 10);
+      expect(bindMock).toHaveBeenCalledWith('johndoe', 6, 10);
     });
 
     it('defaults offset to 0 when not provided', async () => {
@@ -194,7 +194,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 0);
+      expect(bindMock).toHaveBeenCalledWith('johndoe', 6, 0);
     });
 
     it('extracts username from domain', async () => {
@@ -223,7 +223,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('alice', 0);
+      expect(bindMock).toHaveBeenCalledWith('alice', 6, 0);
     });
 
     it('returns error when D1 database is unavailable', async () => {

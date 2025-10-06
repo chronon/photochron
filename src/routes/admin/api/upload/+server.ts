@@ -108,7 +108,9 @@ async function uploadToCloudflareImages(
 > {
   // Extension is guaranteed to exist by validateFile()
   const extension = file.name.split('.').pop()!.toLowerCase();
-  const customFilename = `${username}_${metadata.name}.${extension}`;
+  // Sanitize name to prevent special characters or path traversal
+  const safeName = metadata.name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const customFilename = `${username}_${safeName}.${extension}`;
 
   const renamedFile = new File([await file.arrayBuffer()], customFilename, { type: file.type });
 

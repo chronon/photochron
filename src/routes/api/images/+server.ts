@@ -2,6 +2,8 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { extractUserFromDomain } from '$lib/config';
 
+const PAGE_SIZE = 5;
+
 export const GET: RequestHandler = async ({ url, platform }) => {
   if (!platform?.env?.chrononagram) {
     return json({ error: 'D1 database not available' }, { status: 500 });
@@ -13,15 +15,15 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   const username = extractUserFromDomain(url.hostname, platform.env.DEV_USER);
 
   try {
-    // Query for 6 images to determine if there are more
+    // Query for PAGE_SIZE + 1 to determine if there are more
     const result = await platform.env.chrononagram
-      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT 6 OFFSET ?')
-      .bind(username, offset)
+      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?')
+      .bind(username, PAGE_SIZE + 1, offset)
       .all();
 
-    // Return only 5 images
-    const images = result.results.slice(0, 5);
-    const hasMore = result.results.length === 6;
+    // Return only PAGE_SIZE images
+    const images = result.results.slice(0, PAGE_SIZE);
+    const hasMore = result.results.length > PAGE_SIZE;
 
     return json({ images, hasMore });
   } catch (error) {
