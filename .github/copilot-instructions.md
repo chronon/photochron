@@ -9,12 +9,12 @@
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
 - **Subdomain support** - `admin.example.com` also shows example's photos
-- **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
-- **Dynamic content** - Images fetched from API per user
-- **Infinite scroll** - Smooth loading of photo galleries
+- **KV-based configuration** - All user config (CDN, avatars, authorized client IDs) stored in Cloudflare KV
+- **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
+- **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
+- **Infinite scroll** - Smooth loading of photo galleries with API pagination
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
-- **Cloudflare Images integration** - Optimized image delivery
-- **Zero secrets** - No environment variables or API keys needed
+- **Cloudflare Images integration** - Optimized image delivery and storage
 
 ### Key Information
 
@@ -67,7 +67,6 @@ pnpm deploy:preview         # Dry run deployment
 ```jsonc
 {
   "global": {
-    "apiBase": "https://api.yourdomain.com",
     "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
     "imageVariant": "default"
   },
@@ -77,12 +76,20 @@ pnpm deploy:preview         # Dry run deployment
         "binding": "CHRONONAGRAM",
         "id": "your-kv-namespace-id"
       }
+    ],
+    "d1_databases": [
+      {
+        "binding": "chrononagram",
+        "database_name": "chrononagram",
+        "database_id": "your-d1-database-id"
+      }
     ]
   },
   "users": {
     "username": {
       "domain": "example.com",
-      "avatar": { "id": "image-id", "variant": "default" }
+      "avatar": { "id": "image-id", "variant": "default" },
+      "authorized_client_ids": ["cloudflare-access-service-token-client-id"]
     }
   }
 }
@@ -91,6 +98,7 @@ pnpm deploy:preview         # Dry run deployment
 - Configuration stored in Cloudflare KV (not environment variables)
 - JSONC format supports comments
 - Build scripts automatically generate `wrangler.jsonc` and KV data
+- Create `.dev.vars` with `CF_IMAGES_TOKEN` and `DEV_USER` for local development
 
 ### Common Issues and Workarounds
 
@@ -142,13 +150,17 @@ src/
 │   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
-│   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, API image fetching
+│   ├── admin/api/upload/
+│   │   └── +server.ts        # Authenticated upload endpoint (Cloudflare Access + Images + D1)
+│   ├── api/images/
+│   │   └── +server.ts        # Paginated image data API (D1 queries)
+│   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, D1 image fetching
 │   ├── +layout.svelte        # Site header with user info
 │   ├── +page.server.ts       # Image data passing with validation
 │   └── +page.svelte          # Main photo gallery with infinite scroll
 ├── hooks.server.ts           # Dynamic favicon handling using KV config
 ├── app.html                  # HTML template with favicon links
-├── app.d.ts                  # TypeScript ambient declarations (Cloudflare KV bindings)
+├── app.d.ts                  # TypeScript ambient declarations (Cloudflare KV, D1, env vars)
 └── app.css                   # Global styles
 ```
 
@@ -161,38 +173,44 @@ src/
 - `src/lib/config.test.ts` - Unit tests for config module (Vitest)
 - `src/lib/InfiniteScroll.svelte.test.ts` - Component tests (Vitest + vitest-browser-svelte)
 
-### Configuration & API Integration
+### Configuration & Data Storage
 
 **Configuration (from Cloudflare KV):**
-- **Global config** (`global` key): API base URL, image CDN settings
-- **User config** (`user:USERNAME` key): Domain, avatar per user
 
-**API Integration:**
+- **Global config** (`global` key): Image CDN settings
+- **User config** (`user:USERNAME` key): Domain, avatar, authorized client IDs per user
 
-The application fetches only image data from: `${apiBase}/data/${username}/content.json`
+**Image Metadata (from Cloudflare D1):**
 
-Expected API response structure:
+The application stores image metadata in D1 database:
 
-```json
-{
-  "images": [
-    {
-      "id": "example-image-id",
-      "name": "Sample Photo",
-      "caption": "A beautiful sunset photo",
-      "taken": "2025-01-15T18:30:00-05:00",
-      "uploaded": "2025-01-15T20:15:00-05:00"
-    }
-  ]
-}
+```sql
+CREATE TABLE images (
+  id TEXT PRIMARY KEY NOT NULL,     -- Cloudflare Images ID
+  username TEXT NOT NULL,           -- Owner username
+  name TEXT NOT NULL,               -- Display name
+  caption TEXT,                     -- Optional caption
+  captured TEXT NOT NULL,           -- ISO8601 date when photo was captured
+  uploaded TEXT NOT NULL,           -- ISO8601 date when uploaded
+  created_at INTEGER NOT NULL DEFAULT (unixepoch())
+);
 ```
 
-Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
+**Upload API:**
+
+Authenticated endpoint at `admin.example.com/api/upload`:
+
+- Validates via Cloudflare Access (service tokens)
+- Authorizes client ID against user's `authorized_client_ids` in KV
+- Uploads photo to Cloudflare Images
+- Inserts metadata to D1
+- Returns success response
 
 ### Domain-Based Routing
 
-- **example.com** → username: `example` → API: `/data/example/content.json`
-- **photos.jane-doe.com** → username: `jane-doe` → API: `/data/jane-doe/content.json`
+- **example.com** → username: `example` → D1: `SELECT * FROM images WHERE username = 'example'`
+- **photos.jane-doe.com** → username: `jane-doe` → D1: `SELECT * FROM images WHERE username = 'jane-doe'`
+- **admin.example.com/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
 
 ### Dynamic Favicon System
 
@@ -261,10 +279,12 @@ Both commands MUST pass or CI will fail.
 
 - **Adding features**: Follow existing patterns in `src/routes/` and `src/lib/`
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
+- **Database changes**: Create new migration in `migrations/`, apply with `wrangler d1 migrations apply`
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
-- **Adding users**: Edit `config/app.jsonc`, then run `pnpm deploy`
+- **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with authorized client IDs, then run `pnpm deploy`
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
 - **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
+- **Upload endpoint changes**: Modify `src/routes/admin/api/upload/+server.ts`, ensure tests pass
 
 **Platform considerations:**
 
