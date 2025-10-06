@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './+server';
-import type { RequestEvent } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+
+interface UploadResponse {
+  success: boolean;
+  id?: string;
+  filename?: string;
+  error?: string;
+}
 
 // Mock fetch globally
 global.fetch = vi.fn();
@@ -72,7 +79,7 @@ describe('admin/api/upload/+server', () => {
             CF_IMAGES_TOKEN: 'token-123'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       vi.mocked(fetch).mockResolvedValue(
         new Response(
@@ -91,7 +98,7 @@ describe('admin/api/upload/+server', () => {
       );
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(json.success).toBe(true);
       expect(json.id).toBe('img-123');
@@ -104,10 +111,10 @@ describe('admin/api/upload/+server', () => {
         request: {} as Request,
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: undefined
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(500);
       expect(json.success).toBe(false);
@@ -121,10 +128,10 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {}
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(500);
       expect(json.success).toBe(false);
@@ -152,10 +159,10 @@ describe('admin/api/upload/+server', () => {
             CF_IMAGES_TOKEN: 'token-123'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(401);
       expect(json.success).toBe(false);
@@ -202,10 +209,10 @@ describe('admin/api/upload/+server', () => {
             DEV_USER: 'dev'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(403);
       expect(json.success).toBe(false);
@@ -262,10 +269,10 @@ describe('admin/api/upload/+server', () => {
             CF_IMAGES_TOKEN: 'token-123'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(400);
       expect(json.success).toBe(false);
@@ -327,10 +334,10 @@ describe('admin/api/upload/+server', () => {
             CF_IMAGES_TOKEN: 'token-123'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(400);
       expect(json.success).toBe(false);
@@ -381,10 +388,10 @@ describe('admin/api/upload/+server', () => {
             CF_IMAGES_TOKEN: 'token-123'
           }
         }
-      } as unknown as RequestEvent;
+      } as unknown as Parameters<RequestHandler>[0];
 
       const response = await POST(event);
-      const json = await response.json();
+      const json = (await response.json()) as UploadResponse;
 
       expect(response.status).toBe(400);
       expect(json.success).toBe(false);

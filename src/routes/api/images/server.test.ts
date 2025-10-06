@@ -2,6 +2,20 @@ import { describe, it, expect, vi } from 'vitest';
 import { GET } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
 
+interface Image {
+  id: string;
+  name: string;
+  caption: string | null;
+  captured: string;
+  uploaded: string;
+}
+
+interface ImagesResponse {
+  images: Image[];
+  hasMore: boolean;
+  error?: string;
+}
+
 describe('api/images/+server', () => {
   describe('GET', () => {
     it('returns images for user with hasMore=false when less than 6 results', async () => {
@@ -39,10 +53,10 @@ describe('api/images/+server', () => {
             chrononagram: mockD1
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
-      const json = await response.json();
+      const json = (await response.json()) as ImagesResponse;
 
       expect(json.images).toHaveLength(2);
       expect(json.hasMore).toBe(false);
@@ -113,20 +127,14 @@ describe('api/images/+server', () => {
             chrononagram: mockD1
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
-      const json = await response.json();
+      const json = (await response.json()) as ImagesResponse;
 
       expect(json.images).toHaveLength(5);
       expect(json.hasMore).toBe(true);
-      expect(json.images.map((img: { id: string }) => img.id)).toEqual([
-        'img1',
-        'img2',
-        'img3',
-        'img4',
-        'img5'
-      ]);
+      expect(json.images.map((img) => img.id)).toEqual(['img1', 'img2', 'img3', 'img4', 'img5']);
     });
 
     it('uses offset parameter from query string', async () => {
@@ -152,7 +160,7 @@ describe('api/images/+server', () => {
             DEV_USER: 'johndoe'
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
 
@@ -182,7 +190,7 @@ describe('api/images/+server', () => {
             DEV_USER: 'johndoe'
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
 
@@ -211,7 +219,7 @@ describe('api/images/+server', () => {
             chrononagram: mockD1
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
 
@@ -224,10 +232,10 @@ describe('api/images/+server', () => {
         platform: {
           env: {}
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
-      const json = await response.json();
+      const json = (await response.json()) as ImagesResponse;
 
       expect(response.status).toBe(500);
       expect(json.error).toBe('D1 database not available');
@@ -249,10 +257,10 @@ describe('api/images/+server', () => {
             chrononagram: mockD1
           }
         }
-      } as RequestEvent;
+      } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
-      const json = await response.json();
+      const json = (await response.json()) as ImagesResponse;
 
       expect(response.status).toBe(500);
       expect(json.error).toBe('Failed to fetch images');

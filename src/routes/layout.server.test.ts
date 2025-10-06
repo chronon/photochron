@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { load } from './+layout.server';
-import type { RequestEvent } from '@sveltejs/kit';
+import type { LayoutServerLoad } from './$types';
+
+type LoadResult = Exclude<Awaited<ReturnType<LayoutServerLoad>>, void>;
 
 describe('+layout.server', () => {
   describe('load', () => {
@@ -63,10 +65,13 @@ describe('+layout.server', () => {
             CHRONONAGRAM: mockKV,
             chrononagram: mockD1
           }
-        }
-      } as RequestEvent;
+        },
+        parent: vi.fn(),
+        depends: vi.fn(),
+        untrack: vi.fn()
+      } as unknown as Parameters<LayoutServerLoad>[0];
 
-      const result = await load(event);
+      const result = (await load(event)) as LoadResult;
 
       expect(result.config).toEqual({
         imgBase: 'https://cdn.example.com',
@@ -92,8 +97,11 @@ describe('+layout.server', () => {
         url: new URL('https://johndoe.com'),
         platform: {
           env: {}
-        }
-      } as RequestEvent;
+        },
+        parent: vi.fn(),
+        depends: vi.fn(),
+        untrack: vi.fn()
+      } as unknown as Parameters<LayoutServerLoad>[0];
 
       await expect(load(event)).rejects.toThrow(
         'KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.'
@@ -111,8 +119,11 @@ describe('+layout.server', () => {
           env: {
             CHRONONAGRAM: mockKV
           }
-        }
-      } as RequestEvent;
+        },
+        parent: vi.fn(),
+        depends: vi.fn(),
+        untrack: vi.fn()
+      } as unknown as Parameters<LayoutServerLoad>[0];
 
       await expect(load(event)).rejects.toThrow(
         'D1 database not available. Please run with `wrangler dev` or `pnpm dev`.'
@@ -159,8 +170,11 @@ describe('+layout.server', () => {
             CHRONONAGRAM: mockKV,
             chrononagram: mockD1
           }
-        }
-      } as RequestEvent;
+        },
+        parent: vi.fn(),
+        depends: vi.fn(),
+        untrack: vi.fn()
+      } as unknown as Parameters<LayoutServerLoad>[0];
 
       await expect(load(event)).rejects.toThrow('D1 query failed');
     });
@@ -210,10 +224,13 @@ describe('+layout.server', () => {
             chrononagram: mockD1,
             DEV_USER: 'devuser'
           }
-        }
-      } as RequestEvent;
+        },
+        parent: vi.fn(),
+        depends: vi.fn(),
+        untrack: vi.fn()
+      } as unknown as Parameters<LayoutServerLoad>[0];
 
-      const result = await load(event);
+      const result = (await load(event)) as LoadResult;
 
       expect(result.username).toBe('devuser');
       expect(result.config.userName).toBe('Dev User');
