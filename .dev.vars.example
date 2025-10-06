@@ -1,0 +1,9 @@
+# Development environment variables for Cloudflare Workers
+# Copy this file to .dev.vars and fill in your actual values
+
+# Cloudflare Images API token
+CF_IMAGES_TOKEN=your-cloudflare-images-token-here
+
+# Username to use when accessing localhost (e.g., localhost:5173)
+# This should match a username configured in config/app.jsonc
+DEV_USER=your-username-here

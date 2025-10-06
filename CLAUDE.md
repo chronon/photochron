@@ -31,23 +31,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-This is a multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos using Cloudflare KV for configuration storage.
+This is a multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos using Cloudflare KV for configuration and Cloudflare D1 for image metadata storage.
 
 ### Key Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - Extracts username from domain (example.com → example user)
 - **KV-based configuration** - Global and user config stored in Cloudflare KV
-- **Dynamic content** - Images fetched from API at runtime
+- **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
+- **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Infinite scroll** - Smooth loading with IntersectionObserver
-- **Cloudflare Images integration** - Optimized image delivery
+- **Cloudflare Images integration** - Optimized image delivery and storage
 
 ### Key Components
 
-- **Layout Server Load** (`src/routes/+layout.server.ts`) - Extracts username from domain, loads config from KV, fetches images from API
+- **Layout Server Load** (`src/routes/+layout.server.ts`) - Extracts username from domain, loads config from KV, fetches images from D1
 - **Page Server Load** (`src/routes/+page.server.ts`) - Passes images data from parent layout
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
+- **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`) - Handles authenticated photo uploads, validates via Cloudflare Access, uploads to Cloudflare Images, inserts to D1
+- **Images API** (`src/routes/api/images/+server.ts`) - Returns paginated images from D1 for infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
 - **Config Module** (`src/lib/config.ts`) - Domain parsing, KV config fetching, and TypeScript interfaces
 - **Hooks Server** (`src/hooks.server.ts`) - Intercepts favicon requests and redirects using KV config
@@ -56,19 +59,28 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 
 - **Cloudflare KV Storage** - Stores global and per-user configuration at deployment time
 - **KV Keys**:
-  - `global` - API base URL, image CDN settings
-  - `user:USERNAME` - Domain, avatar per user
-- **No environment variables** - All config in KV
+  - `global` - Image CDN settings
+  - `user:USERNAME` - Domain, avatar, authorized client IDs per user
+- **Environment secrets** - `CF_IMAGES_TOKEN` (Cloudflare Images API token), `DEV_USER` (localhost development username)
 - **Deploy-time configuration** - `config/app.jsonc` (JSONC format with comments support) → Build scripts → KV upload → deployment
 - **Build scripts** - Automated scripts transform `app.jsonc` into `wrangler.jsonc` and `app.kv.json`
 
-### API Integration
+### D1 Database
 
-The app fetches only image data from `${apiBase}/data/${username}/content.json`:
+The app stores image metadata in Cloudflare D1:
 
-- `images[]` - Array of photos with id, name, caption, taken/uploaded dates
+- **Table**: `images` - Contains id, username, name, caption, captured, uploaded, created_at
+- **Index**: `idx_username_uploaded` - Optimizes queries by username and upload date
+- **Queries**: Gallery loads images with `SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?`
 
-Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
+### Upload API
+
+The app provides an authenticated upload endpoint at `admin.example.com/api/upload`:
+
+- **Authentication**: Cloudflare Access with service tokens (validated at edge)
+- **Authorization**: Client ID must be in user's `authorized_client_ids` list in KV
+- **Flow**: Multipart form data → Validate → Upload to Cloudflare Images → Insert to D1 → Return response
+- **Metadata**: name, caption, captured date provided by client; uploaded date added by server
 
 ### Technology Stack
 
@@ -79,12 +91,15 @@ Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
 
 ### File Structure
 
-- `src/routes/+layout.server.ts` - Domain-based user detection, KV config loading, API image fetching
+- `src/routes/+layout.server.ts` - Domain-based user detection, KV config loading, D1 image fetching
 - `src/routes/+page.server.ts` - Image data passing from layout
 - `src/routes/+page.svelte` - Main gallery display with infinite scroll
+- `src/routes/admin/api/upload/+server.ts` - Authenticated upload endpoint (Cloudflare Access + D1 + Images)
+- `src/routes/api/images/+server.ts` - Paginated image data API (D1 queries)
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
 - `src/hooks.server.ts` - Dynamic favicon handling using KV config
+- `migrations/0001_initial_schema.sql` - D1 database schema and indexes
 - `config/app.jsonc` - Source of truth for all configuration (JSONC format, gitignored)
 - `config/app-example.json` - Example configuration template
 - `scripts/build-config.ts` - Master build script that runs wrangler and KV generators
@@ -93,6 +108,7 @@ Configuration (CDN URLs, avatars, user info) comes from KV, not the API.
 - `scripts/deploy-kv.ts` - Uploads KV data to Cloudflare (local and remote)
 - `wrangler.jsonc` - Auto-generated at deploy time from config/app.jsonc
 - `config/app.kv.json` - Auto-generated KV data for upload
+- `.dev.vars` - Local development secrets (CF_IMAGES_TOKEN, DEV_USER)
 
 ### Dynamic Favicon System
 

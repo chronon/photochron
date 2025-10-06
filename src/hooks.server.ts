@@ -14,7 +14,11 @@ export const handle: Handle = async ({ event, resolve }) => {
         throw new Error('KV namespace not available');
       }
 
-      const kvConfig = await getConfigFromKV(platform.env.CHRONONAGRAM, url.hostname);
+      const kvConfig = await getConfigFromKV(
+        platform.env.CHRONONAGRAM,
+        url.hostname,
+        platform.env.DEV_USER
+      );
       const { global, user } = kvConfig;
 
       let variant: string;

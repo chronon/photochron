@@ -1,8 +1,6 @@
 export interface GlobalKVConfig {
-  apiBase: string;
   imageBase: string;
   imageVariant: string;
-  devUser: string;
 }
 
 export interface UserKVConfig {
@@ -14,51 +12,16 @@ export interface UserKVConfig {
     id: string;
     variant: string;
   };
+  authorized_client_ids: string[];
 }
 
-/**
- * Expected API response structure for the content endpoint.
- *
- * The API returns only image data. All configuration (user info, CDN settings)
- * comes from Cloudflare KV storage and is configured at deployment time.
- *
- * API endpoint: `${apiBase}/data/${username}/content.json`
- *
- * @example
- * ```json
- * {
- *   "images": [
- *     {
- *       "id": "5866f3f0-69f4-447b-11b2-c960d3e3dc00",
- *       "name": "IMG_3818",
- *       "caption": "Photo caption",
- *       "taken": "2025-09-06T21:25:40-04:00",
- *       "uploaded": "2025-09-07T12:33:04-04:00"
- *     }
- *   ]
- * }
- * ```
- */
-export interface APIResponse {
-  /** Array of images to display in the gallery */
-  images: Array<{
-    /** Unique identifier for the image (used in CDN URL) */
-    id: string;
-    /** Original filename or display name */
-    name: string;
-    /** Optional caption text to display */
-    caption?: string;
-    /** ISO date string when photo was taken */
-    taken: string;
-    /** ISO date string when photo was uploaded */
-    uploaded: string;
-  }>;
-}
-
-export function extractUserFromDomain(hostname: string, devUser: string): string {
+export function extractUserFromDomain(hostname: string, devUser?: string): string {
   const hostWithoutPort = hostname.split(':')[0];
 
   if (hostWithoutPort.startsWith('localhost')) {
+    if (!devUser) {
+      throw new Error('DEV_USER environment variable must be set for localhost development');
+    }
     return devUser;
   }
 
@@ -71,12 +34,13 @@ export function extractUserFromDomain(hostname: string, devUser: string): string
     return parts[parts.length - 2];
   }
 
-  return devUser;
+  throw new Error(`Cannot extract username from domain: ${hostname}`);
 }
 
 export async function getConfigFromKV(
   kv: KVNamespace,
-  hostname: string
+  hostname: string,
+  devUser?: string
 ): Promise<{ global: GlobalKVConfig; user: UserKVConfig; username: string }> {
   const globalJson = await kv.get('global');
   if (!globalJson) {
@@ -84,7 +48,7 @@ export async function getConfigFromKV(
   }
 
   const global = JSON.parse(globalJson) as GlobalKVConfig;
-  const username = extractUserFromDomain(hostname, global.devUser);
+  const username = extractUserFromDomain(hostname, devUser);
   const userJson = await kv.get(`user:${username}`);
 
   if (!userJson) {

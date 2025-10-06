@@ -27,6 +27,18 @@ describe('config', () => {
       const result = extractUserFromDomain('localhost', 'dev-user');
       expect(result).toBe('dev-user');
     });
+
+    it('throws error when devUser is missing for localhost', () => {
+      expect(() => extractUserFromDomain('localhost')).toThrow(
+        'DEV_USER environment variable must be set for localhost development'
+      );
+    });
+
+    it('throws error for unparseable domains', () => {
+      expect(() => extractUserFromDomain('test')).toThrow(
+        'Cannot extract username from domain: test'
+      );
+    });
   });
 
   describe('getConfigFromKV', () => {
@@ -36,7 +48,6 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                apiBase: 'https://api.example.com',
                 imageBase: 'https://cdn.example.com',
                 imageVariant: 'gallery'
               })
@@ -46,10 +57,14 @@ describe('config', () => {
             return Promise.resolve(
               JSON.stringify({
                 domain: 'johndoe.com',
+                profile: {
+                  name: 'John Doe'
+                },
                 avatar: {
                   id: 'avatar-123',
                   variant: 'profile'
-                }
+                },
+                authorized_client_ids: []
               })
             );
           }
@@ -57,20 +72,23 @@ describe('config', () => {
         })
       } as unknown as KVNamespace;
 
-      const result = await getConfigFromKV(mockKV, 'johndoe.com');
+      const result = await getConfigFromKV(mockKV, 'johndoe.com', 'dev-user');
 
       expect(result).toEqual({
         global: {
-          apiBase: 'https://api.example.com',
           imageBase: 'https://cdn.example.com',
           imageVariant: 'gallery'
         },
         user: {
           domain: 'johndoe.com',
+          profile: {
+            name: 'John Doe'
+          },
           avatar: {
             id: 'avatar-123',
             variant: 'profile'
-          }
+          },
+          authorized_client_ids: []
         },
         username: 'johndoe'
       });
@@ -84,7 +102,7 @@ describe('config', () => {
         get: vi.fn(() => Promise.resolve(null))
       } as unknown as KVNamespace;
 
-      await expect(getConfigFromKV(mockKV, 'johndoe.com')).rejects.toThrow(
+      await expect(getConfigFromKV(mockKV, 'johndoe.com', 'dev-user')).rejects.toThrow(
         'Global config not found in KV'
       );
     });
@@ -93,13 +111,18 @@ describe('config', () => {
       const mockKV = {
         get: vi.fn((key: string) => {
           if (key === 'global') {
-            return Promise.resolve(JSON.stringify({ apiBase: 'https://api.example.com' }));
+            return Promise.resolve(
+              JSON.stringify({
+                imageBase: 'https://cdn.example.com',
+                imageVariant: 'gallery'
+              })
+            );
           }
           return Promise.resolve(null);
         })
       } as unknown as KVNamespace;
 
-      await expect(getConfigFromKV(mockKV, 'johndoe.com')).rejects.toThrow(
+      await expect(getConfigFromKV(mockKV, 'johndoe.com', 'dev-user')).rejects.toThrow(
         'User config not found for: johndoe'
       );
     });

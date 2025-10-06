@@ -20,8 +20,8 @@
     "test": "vitest --run",
     "config:build": "tsx scripts/build-config.ts",
     "config:deploy": "pnpm config:build && tsx scripts/deploy-kv.ts",
-    "deploy": "pnpm config:deploy && pnpm build && wrangler deploy",
-    "deploy:preview": "pnpm config:deploy && pnpm build && wrangler deploy --dry-run"
+    "deploy": "pnpm config:build && pnpm config:deploy && pnpm build && wrangler deploy",
+    "deploy:preview": "pnpm config:build && pnpm config:deploy && pnpm build && wrangler deploy --dry-run"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251003.0",
