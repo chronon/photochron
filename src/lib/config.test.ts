@@ -8,16 +8,6 @@ describe('config', () => {
       expect(result).toBe('johndoe');
     });
 
-    it('extracts username from subdomain', () => {
-      const result = extractUserFromDomain('www.johndoe.com', 'dev-user');
-      expect(result).toBe('johndoe');
-    });
-
-    it('extracts username from deep subdomain', () => {
-      const result = extractUserFromDomain('app.photos.johndoe.com', 'dev-user');
-      expect(result).toBe('johndoe');
-    });
-
     it('handles localhost', () => {
       const result = extractUserFromDomain('localhost:3000', 'dev-user');
       expect(result).toBe('dev-user');

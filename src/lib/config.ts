@@ -30,10 +30,6 @@ export function extractUserFromDomain(hostname: string, devUser?: string): strin
     return parts[0];
   }
 
-  if (parts.length >= 3) {
-    return parts[parts.length - 2];
-  }
-
   throw new Error(`Cannot extract username from domain: ${hostname}`);
 }
 
