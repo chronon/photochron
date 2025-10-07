@@ -6,10 +6,9 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 
 - **Multi-user support** - One deployment serves unlimited domains/users
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
-- **Subdomain support** - `admin.example.com` also shows example's photos
 - **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
-- **Photo upload** - Upload photos via authenticated API endpoint at `admin.domain.com/admin/api/upload`
+- **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/upload`
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -21,7 +20,7 @@ The application extracts the username from the domain name, loads configuration 
 
 1. **Domain** → **Username** → **KV Config** → **D1 Images**
 2. **example.com** → `example` → KV: `user:example` → D1: `SELECT * FROM images WHERE username = 'example'`
-3. **admin.jane.com/admin/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
+3. **jane.com/admin/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
 
 **Configuration** (CDN URLs, avatars, authorized client IDs) is stored in KV at deployment time.
 **Content** (image metadata) is stored in D1 database and queried at runtime.
@@ -131,7 +130,7 @@ CREATE INDEX idx_username_uploaded ON images(username, uploaded DESC);
 
 Upload photos to your gallery via the authenticated API endpoint:
 
-**Endpoint:** `POST https://admin.example.com/admin/api/upload`
+**Endpoint:** `POST https://example.com/admin/api/upload`
 
 **Authentication:** Cloudflare Access with Service Tokens
 
@@ -255,8 +254,8 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 
 **At Runtime (Upload):**
 
-1. **Request arrives** at `admin.example.com/admin/api/upload`
-2. **Cloudflare Access** validates service token at edge
+1. **Request arrives** at `example.com/admin/api/upload`
+2. **Cloudflare Access** validates service token at edge (enforced on `/admin` path)
 3. **Extract username** from domain (`example`)
 4. **Verify authorization** (client ID in `user:example` authorized list)
 5. **Upload to Cloudflare Images**
@@ -272,9 +271,9 @@ The application deploys as a single Cloudflare Worker with:
 - **Cloudflare KV**: Stores all configuration (global, user, authorized client IDs)
 - **Cloudflare D1**: Stores image metadata with indexed queries
 - **Cloudflare Images**: Stores and delivers photo files
-- **Cloudflare Access**: Authenticates upload requests with service tokens
+- **Cloudflare Access**: Authenticates upload requests with service tokens (enforced on `/admin` path)
 - **Environment secrets**: `CF_IMAGES_TOKEN`, `DEV_USER` (via wrangler secrets and .dev.vars)
-- **Auto-generated routes**: Based on `config/app.jsonc`, includes both primary domain and `admin.` subdomain per user
+- **Auto-generated routes**: Based on `config/app.jsonc`, one route per user domain
 - **TypeScript build scripts**: Automated config transformation and KV upload
 
 The `pnpm deploy` command orchestrates the entire process: config generation → KV upload → app build → worker deployment.

@@ -15,12 +15,10 @@ const wranglerTemplate = parseJsonc(readFileSync(wranglerTemplatePath, 'utf-8'))
   unknown
 >;
 
-const routes = Object.values(appConfig.users as Record<string, { domain: string }>).flatMap(
-  (user) => [
-    { pattern: user.domain, custom_domain: true },
-    { pattern: `admin.${user.domain}`, custom_domain: true }
-  ]
-);
+const routes = Object.values(appConfig.users as Record<string, { domain: string }>).map((user) => ({
+  pattern: user.domain,
+  custom_domain: true
+}));
 
 const wranglerConfig = {
   ...wranglerTemplate,
