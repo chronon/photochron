@@ -75,7 +75,7 @@ The app stores image metadata in Cloudflare D1:
 
 ### Upload API
 
-The app provides an authenticated upload endpoint at `admin.example.com/api/upload`:
+The app provides an authenticated upload endpoint at `admin.example.com/admin/api/upload`:
 
 - **Authentication**: Cloudflare Access with service tokens (validated at edge)
 - **Authorization**: Client ID must be in user's `authorized_client_ids` list in KV
