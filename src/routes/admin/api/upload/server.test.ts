@@ -74,7 +74,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -154,7 +154,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -203,7 +203,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123',
             DEV_USER: 'dev'
@@ -264,7 +264,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -329,7 +329,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -383,7 +383,7 @@ describe('admin/api/upload/+server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }

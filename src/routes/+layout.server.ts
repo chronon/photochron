@@ -8,7 +8,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
-  if (!platform?.env?.chrononagram) {
+  if (!platform?.env?.PCHRON_DB) {
     throw new Error('D1 database not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
@@ -28,8 +28,9 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   }>;
 
   try {
-    const result = await platform.env.chrononagram
-      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?')
+    const result = await platform.env.PCHRON_DB.prepare(
+      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?'
+    )
       .bind(username, PAGE_SIZE)
       .all();
 

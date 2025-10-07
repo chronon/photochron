@@ -50,7 +50,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=0'),
         platform: {
           env: {
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         }
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
@@ -124,7 +124,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=0'),
         platform: {
           env: {
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         }
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
@@ -156,7 +156,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=10'),
         platform: {
           env: {
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             DEV_USER: 'johndoe'
           }
         }
@@ -186,7 +186,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             DEV_USER: 'johndoe'
           }
         }
@@ -216,7 +216,7 @@ describe('api/images/+server', () => {
         url: new URL('https://alice.com/api/images'),
         platform: {
           env: {
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         }
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
@@ -254,7 +254,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         }
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;

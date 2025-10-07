@@ -63,7 +63,7 @@ describe('+layout.server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         },
         parent: vi.fn(),
@@ -168,7 +168,7 @@ describe('+layout.server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1
+            PCHRON_DB: mockD1
           }
         },
         parent: vi.fn(),
@@ -221,7 +221,7 @@ describe('+layout.server', () => {
         platform: {
           env: {
             PCHRON_KV: mockKV,
-            chrononagram: mockD1,
+            PCHRON_DB: mockD1,
             DEV_USER: 'devuser'
           }
         },

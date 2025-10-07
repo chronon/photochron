@@ -64,11 +64,11 @@ Create and migrate your D1 database:
 
 ```bash
 # Create D1 database
-wrangler d1 create chrononagram
+wrangler d1 create photochron
 
 # Run migrations
-wrangler d1 migrations apply chrononagram --local  # For local dev
-wrangler d1 migrations apply chrononagram          # For production
+wrangler d1 migrations apply photochron --local  # For local dev
+wrangler d1 migrations apply photochron          # For production
 ```
 
 ### 4. Development

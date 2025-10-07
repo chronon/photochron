@@ -206,14 +206,14 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse('Platform not available', 500, 'Platform environment not available');
   }
 
-  const { PCHRON_KV, chrononagram: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
+  const { PCHRON_KV, PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
 
   if (!PCHRON_KV) {
     return errorResponse('Configuration error', 500, 'PCHRON_KV KV binding not available');
   }
 
   if (!db) {
-    return errorResponse('Configuration error', 500, 'D1 database binding not available');
+    return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
   }
 
   if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {

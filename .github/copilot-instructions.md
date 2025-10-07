@@ -79,7 +79,7 @@ pnpm deploy:preview         # Dry run deployment
     ],
     "d1_databases": [
       {
-        "binding": "chrononagram",
+        "binding": "PCHRON_DB",
         "database_name": "chrononagram",
         "database_id": "your-d1-database-id"
       }

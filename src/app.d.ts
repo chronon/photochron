@@ -8,7 +8,7 @@ declare global {
     interface Platform {
       env: {
         PCHRON_KV: KVNamespace;
-        chrononagram: D1Database;
+        PCHRON_DB: D1Database;
         CF_ACCOUNT_ID: string;
         CF_IMAGES_TOKEN: string;
         DEV_USER?: string;
