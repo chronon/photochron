@@ -62,8 +62,8 @@ describe('+layout.server', () => {
         url: new URL('https://johndoe.com'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1
           }
         },
         parent: vi.fn(),
@@ -117,7 +117,7 @@ describe('+layout.server', () => {
         url: new URL('https://johndoe.com'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         },
         parent: vi.fn(),
@@ -167,8 +167,8 @@ describe('+layout.server', () => {
         url: new URL('https://johndoe.com'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1
           }
         },
         parent: vi.fn(),
@@ -220,8 +220,8 @@ describe('+layout.server', () => {
         url: new URL('http://localhost:5173'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             DEV_USER: 'devuser'
           }
         },

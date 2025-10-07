@@ -73,8 +73,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -153,8 +153,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -202,8 +202,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123',
             DEV_USER: 'dev'
@@ -263,8 +263,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -328,8 +328,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }
@@ -382,8 +382,8 @@ describe('admin/api/upload/+server', () => {
         url: new URL('https://johndoe.com/admin/api/upload'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV,
-            chrononagram: mockD1,
+            PCHRON_KV: mockKV,
+            PCHRON_DB: mockD1,
             CF_ACCOUNT_ID: 'account-123',
             CF_IMAGES_TOKEN: 'token-123'
           }

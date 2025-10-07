@@ -5,7 +5,7 @@ import { extractUserFromDomain } from '$lib/config';
 const PAGE_SIZE = 5;
 
 export const GET: RequestHandler = async ({ url, platform }) => {
-  if (!platform?.env?.chrononagram) {
+  if (!platform?.env?.PCHRON_DB) {
     return json({ error: 'D1 database not available' }, { status: 500 });
   }
 
@@ -16,8 +16,9 @@ export const GET: RequestHandler = async ({ url, platform }) => {
 
   try {
     // Query for PAGE_SIZE + 1 to determine if there are more
-    const result = await platform.env.chrononagram
-      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?')
+    const result = await platform.env.PCHRON_DB.prepare(
+      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?'
+    )
       .bind(username, PAGE_SIZE + 1, offset)
       .all();
 

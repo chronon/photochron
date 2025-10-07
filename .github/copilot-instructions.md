@@ -1,8 +1,8 @@
-# Chrononagram Web - Copilot Instructions
+# Photochron - Copilot Instructions
 
 ## Repository Overview
 
-**Chrononagram Web** is a multi-user, domain-based photo gallery application built with SvelteKit 2.x and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos based on dynamic API configuration using convention-over-configuration principles.
+**Photochron** is a multi-user, domain-based photo gallery application built with SvelteKit 2.x and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos based on dynamic API configuration using convention-over-configuration principles.
 
 ### Key Features
 
@@ -73,13 +73,13 @@ pnpm deploy:preview         # Dry run deployment
   "wrangler": {
     "kv_namespaces": [
       {
-        "binding": "CHRONONAGRAM",
+        "binding": "PCHRON_KV",
         "id": "your-kv-namespace-id"
       }
     ],
     "d1_databases": [
       {
-        "binding": "chrononagram",
+        "binding": "PCHRON_DB",
         "database_name": "chrononagram",
         "database_id": "your-d1-database-id"
       }
@@ -198,7 +198,7 @@ CREATE TABLE images (
 
 **Upload API:**
 
-Authenticated endpoint at `admin.example.com/api/upload`:
+Authenticated endpoint at `admin.example.com/admin/api/upload`:
 
 - Validates via Cloudflare Access (service tokens)
 - Authorizes client ID against user's `authorized_client_ids` in KV
@@ -210,7 +210,7 @@ Authenticated endpoint at `admin.example.com/api/upload`:
 
 - **example.com** → username: `example` → D1: `SELECT * FROM images WHERE username = 'example'`
 - **photos.jane-doe.com** → username: `jane-doe` → D1: `SELECT * FROM images WHERE username = 'jane-doe'`
-- **admin.example.com/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
+- **admin.example.com/admin/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
 
 ### Dynamic Favicon System
 

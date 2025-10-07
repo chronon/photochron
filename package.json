@@ -1,6 +1,6 @@
 {
-  "name": "chrononagram-web",
-  "version": "0.0.1",
+  "name": "photochron",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "engines": {

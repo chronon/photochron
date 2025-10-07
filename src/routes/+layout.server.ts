@@ -4,16 +4,16 @@ import { getConfigFromKV } from '$lib/config';
 const PAGE_SIZE = 5;
 
 export const load: LayoutServerLoad = async ({ url, platform }) => {
-  if (!platform?.env?.CHRONONAGRAM) {
+  if (!platform?.env?.PCHRON_KV) {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
-  if (!platform?.env?.chrononagram) {
+  if (!platform?.env?.PCHRON_DB) {
     throw new Error('D1 database not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
   const kvConfig = await getConfigFromKV(
-    platform.env.CHRONONAGRAM,
+    platform.env.PCHRON_KV,
     url.hostname,
     platform.env.DEV_USER
   );
@@ -28,8 +28,9 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   }>;
 
   try {
-    const result = await platform.env.chrononagram
-      .prepare('SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?')
+    const result = await platform.env.PCHRON_DB.prepare(
+      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?'
+    )
       .bind(username, PAGE_SIZE)
       .all();
 

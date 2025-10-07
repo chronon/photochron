@@ -206,14 +206,14 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse('Platform not available', 500, 'Platform environment not available');
   }
 
-  const { CHRONONAGRAM, chrononagram: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
+  const { PCHRON_KV, PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
 
-  if (!CHRONONAGRAM) {
-    return errorResponse('Configuration error', 500, 'CHRONONAGRAM KV binding not available');
+  if (!PCHRON_KV) {
+    return errorResponse('Configuration error', 500, 'PCHRON_KV KV binding not available');
   }
 
   if (!db) {
-    return errorResponse('Configuration error', 500, 'D1 database binding not available');
+    return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
   }
 
   if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {
@@ -236,7 +236,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
   console.log(`${LOG_PREFIX} Upload request from client ${clientId} for user ${username}`);
 
   // 4. Verify client authorization
-  const userConfigJson = await CHRONONAGRAM.get(`user:${username}`);
+  const userConfigJson = await PCHRON_KV.get(`user:${username}`);
   if (!userConfigJson) {
     return errorResponse('User not found', 404, `User config not found for: ${username}`);
   }

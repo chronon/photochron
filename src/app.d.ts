@@ -7,8 +7,8 @@ declare global {
     // interface PageData {}
     interface Platform {
       env: {
-        CHRONONAGRAM: KVNamespace;
-        chrononagram: D1Database;
+        PCHRON_KV: KVNamespace;
+        PCHRON_DB: D1Database;
         CF_ACCOUNT_ID: string;
         CF_IMAGES_TOKEN: string;
         DEV_USER?: string;
