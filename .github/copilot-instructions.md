@@ -73,7 +73,7 @@ pnpm deploy:preview         # Dry run deployment
   "wrangler": {
     "kv_namespaces": [
       {
-        "binding": "CHRONONAGRAM",
+        "binding": "PCHRON_KV",
         "id": "your-kv-namespace-id"
       }
     ],

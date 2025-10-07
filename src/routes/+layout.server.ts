@@ -4,7 +4,7 @@ import { getConfigFromKV } from '$lib/config';
 const PAGE_SIZE = 5;
 
 export const load: LayoutServerLoad = async ({ url, platform }) => {
-  if (!platform?.env?.CHRONONAGRAM) {
+  if (!platform?.env?.PCHRON_KV) {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   }
 
   const kvConfig = await getConfigFromKV(
-    platform.env.CHRONONAGRAM,
+    platform.env.PCHRON_KV,
     url.hostname,
     platform.env.DEV_USER
   );

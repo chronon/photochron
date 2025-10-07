@@ -33,7 +33,7 @@ describe('hooks.server', () => {
         url: new URL('https://johndoe.com/favicon.ico'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         }
       } as RequestEvent;
@@ -76,7 +76,7 @@ describe('hooks.server', () => {
         url: new URL('https://johndoe.com/favicon-16x16.png'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         }
       } as RequestEvent;
@@ -117,7 +117,7 @@ describe('hooks.server', () => {
         url: new URL('https://johndoe.com/favicon-32x32.png'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         }
       } as RequestEvent;
@@ -158,7 +158,7 @@ describe('hooks.server', () => {
         url: new URL('https://johndoe.com/apple-touch-icon.png'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         }
       } as RequestEvent;
@@ -195,7 +195,7 @@ describe('hooks.server', () => {
         url: new URL('https://johndoe.com/apple-touch-icon.png'),
         platform: {
           env: {
-            CHRONONAGRAM: mockKV
+            PCHRON_KV: mockKV
           }
         }
       } as RequestEvent;

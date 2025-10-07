@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 
 const kvFile = 'config/app.kv.json';
-const binding = 'CHRONONAGRAM';
+const binding = 'PCHRON_KV';
 
 console.log('Uploading KV data to local and remote...');
 execSync(`wrangler kv bulk put --binding=${binding} --local ${kvFile}`, { stdio: 'inherit' });

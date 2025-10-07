@@ -10,12 +10,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   if (faviconMatch) {
     try {
-      if (!platform?.env?.CHRONONAGRAM) {
+      if (!platform?.env?.PCHRON_KV) {
         throw new Error('KV namespace not available');
       }
 
       const kvConfig = await getConfigFromKV(
-        platform.env.CHRONONAGRAM,
+        platform.env.PCHRON_KV,
         url.hostname,
         platform.env.DEV_USER
       );
