@@ -27,7 +27,7 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 # Claude
-.claude/settings.local.json
+/.claude
 
 # config
 config/
