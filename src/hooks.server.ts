@@ -1,7 +1,64 @@
 import type { Handle } from '@sveltejs/kit';
-import { getConfigFromKV } from '$lib/config';
+import { sequence } from '@sveltejs/kit/hooks';
+import { error } from '@sveltejs/kit';
+import { getConfigFromKV, extractUserFromDomain } from '$lib/config';
+import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
 
-export const handle: Handle = async ({ event, resolve }) => {
+// Admin authentication handle
+const handleAdminAuth: Handle = async ({ event, resolve }) => {
+  // Only apply to /admin/* routes
+  if (!event.url.pathname.startsWith('/admin')) {
+    return resolve(event);
+  }
+
+  // Verify platform environment
+  if (!event.platform?.env?.PCHRON_KV) {
+    console.error('[Admin Auth] Platform environment not available');
+    throw error(500, 'Configuration error');
+  }
+
+  const { PCHRON_KV, CF_ACCESS_TEAM_DOMAIN, DEV_USER, DEV_CLIENT_ID } = event.platform.env;
+
+  if (!CF_ACCESS_TEAM_DOMAIN) {
+    console.error('[Admin Auth] CF_ACCESS_TEAM_DOMAIN not configured');
+    throw error(500, 'Configuration error');
+  }
+
+  // Extract username from domain
+  const username = extractUserFromDomain(event.url.hostname, DEV_USER);
+
+  // Extract and validate identity
+  let identity;
+  try {
+    identity = extractAndValidateIdentity(event.request, CF_ACCESS_TEAM_DOMAIN);
+  } catch (err) {
+    console.error(`[Admin Auth] Authentication failed for ${username}:`, err);
+    throw error(401, 'Unauthorized');
+  }
+
+  // Check authorization
+  try {
+    await checkAuthorization(identity, username, PCHRON_KV, DEV_CLIENT_ID);
+  } catch (err) {
+    console.error(`[Admin Auth] Authorization failed for ${username}:`, err);
+    throw error(403, 'Forbidden');
+  }
+
+  console.log(
+    `[Admin Auth] Success: type=${identity.type}, client=${identity.clientId}, user=${username}`
+  );
+
+  // Set authenticated context in locals for child routes
+  event.locals.adminAuth = {
+    username,
+    identity
+  };
+
+  return resolve(event);
+};
+
+// Favicon redirect handle
+const handleFavicon: Handle = async ({ event, resolve }) => {
   const { url, platform } = event;
 
   const faviconMatch = url.pathname.match(
@@ -61,3 +118,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   return resolve(event);
 };
+
+// Combine all handles in sequence
+export const handle = sequence(handleAdminAuth, handleFavicon);

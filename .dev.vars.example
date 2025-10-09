@@ -1,9 +1,17 @@
 # Development environment variables for Cloudflare Workers
 # Copy this file to .dev.vars and fill in your actual values
 
-# Cloudflare Images API token
-CF_IMAGES_TOKEN=your-cloudflare-images-token-here
-
 # Username to use when accessing localhost (e.g., localhost:5173)
 # This should match a username configured in config/app.jsonc
 DEV_USER=your-username-here
+
+# Development client ID for local admin authentication bypass
+# This bypasses KV authorization checks in local development
+DEV_CLIENT_ID=dev-client-id
+
+# Cloudflare Images API token
+CF_IMAGES_TOKEN=your-cloudflare-images-token-here
+
+# Set to "dev" for local development to activate authentication bypass
+# In production, this is set in wrangler.jsonc to your Cloudflare Access team domain
+CF_ACCESS_TEAM_DOMAIN=dev

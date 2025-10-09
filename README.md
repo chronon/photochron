@@ -56,6 +56,8 @@ Edit `.dev.vars` with local development secrets:
 
 - Set `CF_IMAGES_TOKEN` with your Cloudflare Images API token
 - Set `DEV_USER` with your username for localhost development
+- Set `DEV_CLIENT_ID` to `dev-client-id` for authentication bypass
+- Set `CF_ACCESS_TEAM_DOMAIN` to `dev` for local development
 
 ### 3. Set up Database
 
@@ -165,6 +167,121 @@ The upload endpoint:
 4. Inserts metadata to D1 database
 5. Photo immediately appears in gallery
 
+## Admin Authentication
+
+All `/admin/*` routes are protected by a centralized authentication system that validates requests using Cloudflare Access with application-level authorization.
+
+### Architecture
+
+**Two-Layer Security:**
+
+1. **Cloudflare Access (Edge)** - Primary security boundary enforced at the edge before requests reach the application
+2. **Application Validation (Hooks)** - SvelteKit hooks validate JWT claims and check authorization against KV
+
+**Flow:**
+
+1. Request hits `/admin/*` route
+2. Cloudflare Access validates credentials at edge (service token or IdP authentication)
+3. `handleAdminAuth` hook intercepts request
+4. Extracts identity from Cloudflare Access headers
+5. Validates JWT claims (expiration, issuer)
+6. Checks client ID against user's `authorized_client_ids` in KV
+7. Sets authenticated context in `event.locals.adminAuth`
+8. Request proceeds to handler with authenticated context
+
+### Setting Up Cloudflare Access
+
+**1. Configure Cloudflare Access:**
+
+- Go to Cloudflare Zero Trust dashboard
+- Navigate to Access → Applications
+- Create application for `/admin` path on your domains
+- Note your team domain (e.g., `https://chronon.cloudflareaccess.com`)
+- Add to `config/app.jsonc`:
+
+```jsonc
+{
+  "wrangler": {
+    "vars": {
+      "CF_ACCESS_TEAM_DOMAIN": "https://your-team.cloudflareaccess.com"
+    }
+  }
+}
+```
+
+**2. Create Service Token:**
+
+- Navigate to Access → Service Auth → Service Tokens
+- Create new service token
+- Note the Client ID (e.g., `abc123.access`)
+- Note the Client Secret (keep secure)
+
+**3. Authorize Token for User:**
+
+Add the Client ID to user's authorized list in `config/app.jsonc`:
+
+```jsonc
+{
+  "users": {
+    "username": {
+      "domain": "example.com",
+      "avatar": { "id": "image-id", "variant": "default" },
+      "authorized_client_ids": ["abc123.access"]
+    }
+  }
+}
+```
+
+**4. Deploy Configuration:**
+
+```bash
+pnpm deploy
+```
+
+### Supported Authentication Types
+
+**Service Tokens** (Machine-to-machine):
+- Used for automated uploads from scripts/applications
+- Client ID and secret passed via headers
+- Validated against `authorized_client_ids` in KV
+
+**IdP Users** (Browser-based):
+- Users authenticated via identity providers (Google, GitHub, etc.)
+- Email address extracted from JWT
+- Can be added to `authorized_client_ids` for authorization
+
+### Local Development
+
+Local development uses an authentication bypass that only activates when `CF_ACCESS_TEAM_DOMAIN=dev`:
+
+**Setup `.dev.vars`:**
+
+```bash
+DEV_USER=your-username
+DEV_CLIENT_ID=dev-client-id
+CF_IMAGES_TOKEN=your-images-token
+CF_ACCESS_TEAM_DOMAIN=dev
+```
+
+**How it works:**
+
+- When `CF_ACCESS_TEAM_DOMAIN=dev`, authentication validation is skipped
+- `DEV_CLIENT_ID` is used for authorization bypass
+- Only activates in local development (these env vars are not deployed)
+- Production always uses real Cloudflare Access team domain
+
+**Security:** The bypass never activates in production because:
+- `.dev.vars` is gitignored and never deployed
+- `wrangler.jsonc` contains production team domain
+- Conditional logic requires exact match of `"dev"` string
+
+### Key Files
+
+- `src/lib/auth.ts` - Authentication and authorization functions
+- `src/hooks.server.ts` - `handleAdminAuth` hook for request interception
+- `src/routes/admin/api/upload/+server.ts` - Upload endpoint using authenticated context
+- `src/app.d.ts` - TypeScript types for authenticated context
+
 ## Development Commands
 
 ```bash
@@ -206,6 +323,7 @@ scripts/
 └── deploy-kv.ts            # Uploads KV data to Cloudflare
 src/
 ├── lib/
+│   ├── auth.ts             # Authentication and authorization logic
 │   ├── config.ts           # Domain-to-user configuration logic
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
@@ -217,7 +335,7 @@ src/
 │   ├── +layout.svelte      # Site header with user info
 │   ├── +page.server.ts     # Image data passing with validation
 │   └── +page.svelte        # Main photo gallery with infinite scroll
-├── hooks.server.ts         # Dynamic favicon handling
+├── hooks.server.ts         # Admin authentication + dynamic favicon handling
 └── app.html                # HTML template with favicon links
 wrangler.jsonc              # Auto-generated Cloudflare Workers config
 .dev.vars                   # Local development secrets (gitignored)
@@ -225,6 +343,7 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 
 ### Key Components
 
+- **Admin Authentication** (`src/hooks.server.ts`, `src/lib/auth.ts`): Centralized authentication for all `/admin/*` routes using Cloudflare Access
 - **Domain Extraction** (`src/lib/config.ts`): Parses hostname to determine user
 - **KV Configuration** (`src/lib/config.ts`): Fetches global and user config from Cloudflare KV
 - **D1 Database**: Stores image metadata with username-indexed queries
@@ -271,8 +390,9 @@ The application deploys as a single Cloudflare Worker with:
 - **Cloudflare KV**: Stores all configuration (global, user, authorized client IDs)
 - **Cloudflare D1**: Stores image metadata with indexed queries
 - **Cloudflare Images**: Stores and delivers photo files
-- **Cloudflare Access**: Authenticates upload requests with service tokens (enforced on `/admin` path)
-- **Environment secrets**: `CF_IMAGES_TOKEN`, `DEV_USER` (via wrangler secrets and .dev.vars)
+- **Cloudflare Access**: Authenticates all `/admin/*` requests with service tokens or IdP users
+- **Environment variables**: `CF_ACCESS_TEAM_DOMAIN`, `CF_IMAGES_TOKEN` (via wrangler vars)
+- **Development secrets**: `DEV_USER`, `DEV_CLIENT_ID` (via .dev.vars, not deployed)
 - **Auto-generated routes**: Based on `config/app.jsonc`, one route per user domain
 - **TypeScript build scripts**: Automated config transformation and KV upload
 
@@ -282,12 +402,13 @@ The `pnpm deploy` command orchestrates the entire process: config generation →
 
 ### Adding a User
 
-1. **Create Cloudflare Access Service Token**: Generate service token for the user's upload authentication
-2. **Edit `config/app.jsonc`**: Add user entry with domain, avatar, and authorized client IDs
-3. **Deploy**: Run `pnpm deploy` to generate config, upload to KV, and deploy
-4. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
-5. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
-6. **Done!** - No code changes needed; routes are auto-generated, D1 stores their images
+1. **Set up Cloudflare Access** (one-time): Configure Access application for `/admin` path if not already done
+2. **Create Service Token**: Generate Cloudflare Access service token for upload authentication
+3. **Edit `config/app.jsonc`**: Add user entry with domain, avatar, and authorized client IDs (include service token client ID)
+4. **Deploy**: Run `pnpm deploy` to generate config, upload to KV, and deploy
+5. **Create favicon variants** (optional): Add `favicon16`, `favicon32`, `apple180` variants for the user's avatar in Cloudflare Images
+6. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
+7. **Done!** - No code changes needed; routes are auto-generated, D1 stores their images
 
 ### Updating a User
 

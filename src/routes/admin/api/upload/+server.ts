@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
 import { json, type NumericRange } from '@sveltejs/kit';
-import { extractUserFromDomain, type UserKVConfig } from '$lib/config';
 
 interface ImageMetadata {
   name: string;
@@ -200,17 +199,24 @@ async function saveImageMetadata(
   }
 }
 
-export const POST: RequestHandler = async ({ request, url, platform }) => {
-  // 1. Verify platform environment
+export const POST: RequestHandler = async ({ request, platform, locals }) => {
+  // Get authenticated context from locals (set by hooks)
+  if (!locals.adminAuth) {
+    return errorResponse('Unauthorized', 401, 'Admin authentication required');
+  }
+
+  const { username, identity } = locals.adminAuth;
+
+  console.log(
+    `${LOG_PREFIX} Upload request from ${identity.type}: ${identity.clientId} for user ${username}`
+  );
+
+  // Verify platform environment
   if (!platform?.env) {
     return errorResponse('Platform not available', 500, 'Platform environment not available');
   }
 
-  const { PCHRON_KV, PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
-
-  if (!PCHRON_KV) {
-    return errorResponse('Configuration error', 500, 'PCHRON_KV KV binding not available');
-  }
+  const { PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
 
   if (!db) {
     return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
@@ -220,40 +226,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse('Configuration error', 500, 'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN');
   }
 
-  // 2. Verify Cloudflare Access authentication
-  const clientId = request.headers.get('Cf-Access-Client-Id');
-  if (!clientId) {
-    return errorResponse(
-      'Unauthorized: Missing Access headers',
-      401,
-      'Missing Cloudflare Access client ID header'
-    );
-  }
-
-  // 3. Extract username from domain
-  const username = extractUserFromDomain(url.hostname, platform.env.DEV_USER);
-
-  console.log(`${LOG_PREFIX} Upload request from client ${clientId} for user ${username}`);
-
-  // 4. Verify client authorization
-  const userConfigJson = await PCHRON_KV.get(`user:${username}`);
-  if (!userConfigJson) {
-    return errorResponse('User not found', 404, `User config not found for: ${username}`);
-  }
-
-  const userConfig = JSON.parse(userConfigJson) as UserKVConfig;
-
-  if (!userConfig.authorized_client_ids.includes(clientId)) {
-    return errorResponse(
-      'Unauthorized: Client not authorized for this user',
-      403,
-      `Unauthorized client ID ${clientId} for user ${username}`
-    );
-  }
-
-  console.log(`${LOG_PREFIX} Client ${clientId} authorized for user ${username}`);
-
-  // 5. Parse form data
+  // Parse form data
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -261,7 +234,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse('Invalid form data', 400, `Failed to parse form data: ${error}`);
   }
 
-  // 6. Extract and validate file
+  // Extract and validate file
   const file = formData.get('file');
   if (!file || !(file instanceof File)) {
     return errorResponse('Missing or invalid file', 400);
@@ -276,7 +249,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     `${LOG_PREFIX} Received file: ${file.name} (${file.type}, ${(file.size / 1024 / 1024).toFixed(2)} MB)`
   );
 
-  // 7. Extract and validate metadata
+  // Extract and validate metadata
   const metadataStr = formData.get('metadata');
   if (!metadataStr || typeof metadataStr !== 'string') {
     return errorResponse('Missing or invalid metadata', 400);
@@ -292,7 +265,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     `${LOG_PREFIX} Metadata validated: name=${metadata.name}, captured=${metadata.captured}`
   );
 
-  // 8. Upload to Cloudflare Images
+  // Upload to Cloudflare Images
   const uploadedTimestamp = new Date().toISOString();
   const uploadResult = await uploadToCloudflareImages(
     file,
@@ -307,7 +280,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse(uploadResult.error, 500);
   }
 
-  // 9. Save metadata to D1
+  // Save metadata to D1
   const saveResult = await saveImageMetadata(
     db,
     uploadResult.imageId,
@@ -320,7 +293,7 @@ export const POST: RequestHandler = async ({ request, url, platform }) => {
     return errorResponse(saveResult.error, 500);
   }
 
-  // 10. Return success
+  // Return success
   return json({
     success: true,
     id: uploadResult.imageId,

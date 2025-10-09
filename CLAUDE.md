@@ -61,7 +61,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **KV Keys**:
   - `global` - Image CDN settings
   - `user:USERNAME` - Domain, avatar, authorized client IDs per user
-- **Environment secrets** - `CF_IMAGES_TOKEN` (Cloudflare Images API token), `DEV_USER` (localhost development username)
+- **Environment secrets** - `CF_IMAGES_TOKEN` (Cloudflare Images API token), `CF_ACCESS_TEAM_DOMAIN` (Cloudflare Access team domain), `DEV_USER` (localhost development username), `DEV_CLIENT_ID` (local development auth bypass)
 - **Deploy-time configuration** - `config/app.jsonc` (JSONC format with comments support) → Build scripts → KV upload → deployment
 - **Build scripts** - Automated scripts transform `app.jsonc` into `wrangler.jsonc` and `app.kv.json`
 
@@ -73,12 +73,47 @@ The app stores image metadata in Cloudflare D1:
 - **Index**: `idx_username_uploaded` - Optimizes queries by username and upload date
 - **Queries**: Gallery loads images with `SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?`
 
+### Authentication & Authorization
+
+The app uses a centralized authentication system for all `/admin/*` routes:
+
+**Architecture:**
+- **Cloudflare Access (Edge)** - Primary security boundary, blocks unauthenticated requests
+- **SvelteKit Hooks** - Application-level validation and authorization
+- **KV Authorization** - Per-user authorized client ID lists
+
+**Authentication Flow:**
+1. Request hits `/admin/*` route
+2. `handleAdminAuth` hook in `src/hooks.server.ts` intercepts request
+3. Extracts identity from Cloudflare Access headers (`Cf-Access-Client-Id` or `Cf-Access-Jwt-Assertion`)
+4. Validates JWT claims (expiration, issuer) for defense-in-depth
+5. Checks client ID against user's `authorized_client_ids` in KV
+6. Sets authenticated context in `event.locals.adminAuth` for downstream handlers
+
+**Supported Authentication Types:**
+- **Service Tokens** - For automated clients (client ID from `common_name` JWT claim or header)
+- **IdP Users** - For browser-based access (client ID from `email` JWT claim)
+
+**Local Development:**
+- Uses development bypass when `CF_ACCESS_TEAM_DOMAIN=dev` (from `.dev.vars`)
+- `DEV_CLIENT_ID` env var provides local authorization without KV lookup
+- Never activates in production (wrangler.jsonc has real team domain)
+
+**Configuration:**
+- `CF_ACCESS_TEAM_DOMAIN` - Cloudflare Access team domain (e.g., `https://yourteam.cloudflareaccess.com`)
+- `authorized_client_ids` - Array of allowed client IDs per user in KV config
+- Service token secrets stored securely, never committed to git
+
+**Key Files:**
+- `src/lib/auth.ts` - Authentication/authorization functions
+- `src/hooks.server.ts` - Request interception and auth enforcement
+- `src/app.d.ts` - Type definitions for `event.locals.adminAuth`
+
 ### Upload API
 
 The app provides an authenticated upload endpoint at `example.com/admin/api/upload`:
 
-- **Authentication**: Cloudflare Access with service tokens (enforced on `/admin` path at edge)
-- **Authorization**: Client ID must be in user's `authorized_client_ids` list in KV
+- **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
 - **Flow**: Multipart form data → Validate → Upload to Cloudflare Images → Insert to D1 → Return response
 - **Metadata**: name, caption, captured date provided by client; uploaded date added by server
 

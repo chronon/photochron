@@ -71,6 +71,10 @@ pnpm deploy:preview         # Dry run deployment
     "imageVariant": "default"
   },
   "wrangler": {
+    "vars": {
+      "CF_ACCOUNT_ID": "your-cloudflare-account-id",
+      "CF_ACCESS_TEAM_DOMAIN": "https://your-team.cloudflareaccess.com"
+    },
     "kv_namespaces": [
       {
         "binding": "PCHRON_KV",
@@ -98,7 +102,7 @@ pnpm deploy:preview         # Dry run deployment
 - Configuration stored in Cloudflare KV (not environment variables)
 - JSONC format supports comments
 - Build scripts automatically generate `wrangler.jsonc` and KV data
-- Create `.dev.vars` with `CF_IMAGES_TOKEN` and `DEV_USER` for local development
+- Create `.dev.vars` with `CF_IMAGES_TOKEN`, `CF_ACCESS_TEAM_DOMAIN=dev`, `DEV_USER`, and `DEV_CLIENT_ID` for local development
 
 ### Common Issues and Workarounds
 
@@ -147,6 +151,7 @@ pnpm deploy:preview         # Dry run deployment
 ```
 src/
 ├── lib/
+│   ├── auth.ts                # Authentication and authorization logic
 │   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
@@ -158,7 +163,7 @@ src/
 │   ├── +layout.svelte        # Site header with user info
 │   ├── +page.server.ts       # Image data passing with validation
 │   └── +page.svelte          # Main photo gallery with infinite scroll
-├── hooks.server.ts           # Dynamic favicon handling using KV config
+├── hooks.server.ts           # Admin authentication + dynamic favicon handling
 ├── app.html                  # HTML template with favicon links
 ├── app.d.ts                  # TypeScript ambient declarations (Cloudflare KV, D1, env vars)
 └── app.css                   # Global styles
@@ -170,7 +175,9 @@ src/
 
 #### Test Structure
 
+- `src/lib/auth.test.ts` - Unit tests for authentication module (Vitest)
 - `src/lib/config.test.ts` - Unit tests for config module (Vitest)
+- `src/routes/admin/api/upload/server.test.ts` - Upload endpoint tests (Vitest)
 - `src/lib/InfiniteScroll.svelte.test.ts` - Component tests (Vitest + vitest-browser-svelte)
 
 ### Configuration & Data Storage
@@ -200,11 +207,127 @@ CREATE TABLE images (
 
 Authenticated endpoint at `admin.example.com/admin/api/upload`:
 
-- Validates via Cloudflare Access (service tokens)
+- Validates via Cloudflare Access (service tokens or IdP users)
 - Authorizes client ID against user's `authorized_client_ids` in KV
 - Uploads photo to Cloudflare Images
 - Inserts metadata to D1
 - Returns success response
+
+## Authentication & Authorization Patterns
+
+### Architecture
+
+All `/admin/*` routes use centralized authentication via SvelteKit hooks:
+
+**Two-Layer Security:**
+1. **Cloudflare Access (Edge)** - Primary security boundary enforced at edge
+2. **Application Validation (Hooks)** - SvelteKit hooks validate JWT claims and check authorization
+
+**Key Files:**
+- `src/lib/auth.ts` - Authentication and authorization functions
+- `src/hooks.server.ts` - `handleAdminAuth` hook intercepts all `/admin/*` requests
+- `src/app.d.ts` - TypeScript types for authenticated context
+
+### Authentication Flow
+
+1. Request hits `/admin/*` route
+2. Cloudflare Access validates at edge (enforced on path)
+3. `handleAdminAuth` hook intercepts request in application
+4. Extracts identity from Cloudflare Access headers
+5. Validates JWT claims (expiration, issuer)
+6. Checks client ID against user's `authorized_client_ids` in KV
+7. Sets `event.locals.adminAuth` with authenticated context
+8. Request proceeds to handler with authenticated user info
+
+### Supported Authentication Types
+
+**Service Tokens** (Machine-to-machine):
+```
+Headers:
+  CF-Access-Client-Id: abc123.access
+  CF-Access-Client-Secret: secret-key
+```
+- Used for automated uploads from scripts/applications
+- Client ID validated against `authorized_client_ids` in KV
+
+**IdP Users** (Browser-based):
+```
+Headers:
+  CF-Access-Jwt-Assertion: eyJhbGc...
+```
+- Authenticated via identity providers (Google, GitHub, etc.)
+- Email address extracted from JWT
+- Email can be added to `authorized_client_ids` for authorization
+
+### Local Development Bypass
+
+Development uses authentication bypass that **only** activates when `CF_ACCESS_TEAM_DOMAIN=dev`:
+
+**Setup `.dev.vars`:**
+```bash
+DEV_USER=your-username
+DEV_CLIENT_ID=dev-client-id
+CF_IMAGES_TOKEN=your-images-token
+CF_ACCESS_TEAM_DOMAIN=dev
+```
+
+**How it works:**
+- When `CF_ACCESS_TEAM_DOMAIN=dev`, authentication validation is skipped
+- `DEV_CLIENT_ID` is used for authorization bypass
+- Only activates in local development (not deployed)
+
+**Security guarantees:**
+- `.dev.vars` is gitignored and never deployed
+- Production uses real team domain from `wrangler.jsonc`
+- Conditional logic requires exact match of `"dev"` string
+- Impossible to accidentally activate in production
+
+### Working with Authentication
+
+**Using authenticated context in handlers:**
+
+```typescript
+export const POST: RequestHandler = async ({ locals }) => {
+  // Get authenticated context from hooks
+  if (!locals.adminAuth) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { username, identity } = locals.adminAuth;
+  // identity.type: 'service_token' | 'idp_user'
+  // identity.clientId: string
+  // identity.email?: string (for IdP users)
+
+  // Your handler logic here...
+};
+```
+
+**Testing authentication in unit tests:**
+
+```typescript
+const event = {
+  request: mockRequest,
+  platform: { env: { /* ... */ } },
+  locals: {
+    adminAuth: {
+      username: 'testuser',
+      identity: {
+        type: 'service_token' as const,
+        clientId: 'test-client.access'
+      }
+    }
+  }
+} as unknown as Parameters<RequestHandler>[0];
+```
+
+### Best Practices
+
+1. **Never bypass hooks** - Don't create admin endpoints outside `/admin/*` path
+2. **Always use locals.adminAuth** - Don't parse headers directly in handlers
+3. **Test with real service tokens** - Use `pnpm preview` for realistic testing
+4. **Never commit secrets** - Keep `.dev.vars` gitignored
+5. **Update authorized_client_ids** - Add client IDs to KV config for authorization
+6. **Use appropriate auth type** - Service tokens for automation, IdP for browsers
 
 ### Domain-Based Routing
 
@@ -281,7 +404,10 @@ Both commands MUST pass or CI will fail.
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
 - **Database changes**: Create new migration in `migrations/`, apply with `wrangler d1 migrations apply`
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
-- **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with authorized client IDs, then run `pnpm deploy`
+- **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with domain and authorized client IDs, then run `pnpm deploy`
+- **Adding admin endpoints**: Place under `/admin/*` path to use centralized authentication, access user info via `locals.adminAuth`
+- **Authentication changes**: Modify `src/lib/auth.ts` and ensure all tests in `src/lib/auth.test.ts` pass
+- **Authorization changes**: Update user's `authorized_client_ids` in `config/app.jsonc`, then run `pnpm deploy`
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
 - **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
 - **Upload endpoint changes**: Modify `src/routes/admin/api/upload/+server.ts`, ensure tests pass
