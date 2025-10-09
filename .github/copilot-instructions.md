@@ -220,10 +220,12 @@ Authenticated endpoint at `admin.example.com/admin/api/upload`:
 All `/admin/*` routes use centralized authentication via SvelteKit hooks:
 
 **Two-Layer Security:**
+
 1. **Cloudflare Access (Edge)** - Primary security boundary enforced at edge
 2. **Application Validation (Hooks)** - SvelteKit hooks validate JWT claims and check authorization
 
 **Key Files:**
+
 - `src/lib/auth.ts` - Authentication and authorization functions
 - `src/hooks.server.ts` - `handleAdminAuth` hook intercepts all `/admin/*` requests
 - `src/app.d.ts` - TypeScript types for authenticated context
@@ -242,19 +244,23 @@ All `/admin/*` routes use centralized authentication via SvelteKit hooks:
 ### Supported Authentication Types
 
 **Service Tokens** (Machine-to-machine):
+
 ```
 Headers:
   CF-Access-Client-Id: abc123.access
   CF-Access-Client-Secret: secret-key
 ```
+
 - Used for automated uploads from scripts/applications
 - Client ID validated against `authorized_client_ids` in KV
 
 **IdP Users** (Browser-based):
+
 ```
 Headers:
   CF-Access-Jwt-Assertion: eyJhbGc...
 ```
+
 - Authenticated via identity providers (Google, GitHub, etc.)
 - Email address extracted from JWT
 - Email can be added to `authorized_client_ids` for authorization
@@ -264,6 +270,7 @@ Headers:
 Development uses authentication bypass that **only** activates when `CF_ACCESS_TEAM_DOMAIN=dev`:
 
 **Setup `.dev.vars`:**
+
 ```bash
 DEV_USER=your-username
 DEV_CLIENT_ID=dev-client-id
@@ -272,11 +279,13 @@ CF_ACCESS_TEAM_DOMAIN=dev
 ```
 
 **How it works:**
+
 - When `CF_ACCESS_TEAM_DOMAIN=dev`, authentication validation is skipped
 - `DEV_CLIENT_ID` is used for authorization bypass
 - Only activates in local development (not deployed)
 
 **Security guarantees:**
+
 - `.dev.vars` is gitignored and never deployed
 - Production uses real team domain from `wrangler.jsonc`
 - Conditional logic requires exact match of `"dev"` string
@@ -307,7 +316,11 @@ export const POST: RequestHandler = async ({ locals }) => {
 ```typescript
 const event = {
   request: mockRequest,
-  platform: { env: { /* ... */ } },
+  platform: {
+    env: {
+      /* ... */
+    }
+  },
   locals: {
     adminAuth: {
       username: 'testuser',

@@ -241,11 +241,13 @@ pnpm deploy
 ### Supported Authentication Types
 
 **Service Tokens** (Machine-to-machine):
+
 - Used for automated uploads from scripts/applications
 - Client ID and secret passed via headers
 - Validated against `authorized_client_ids` in KV
 
 **IdP Users** (Browser-based):
+
 - Users authenticated via identity providers (Google, GitHub, etc.)
 - Email address extracted from JWT
 - Can be added to `authorized_client_ids` for authorization
@@ -271,6 +273,7 @@ CF_ACCESS_TEAM_DOMAIN=dev
 - Production always uses real Cloudflare Access team domain
 
 **Security:** The bypass never activates in production because:
+
 - `.dev.vars` is gitignored and never deployed
 - `wrangler.jsonc` contains production team domain
 - Conditional logic requires exact match of `"dev"` string

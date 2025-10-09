@@ -58,7 +58,7 @@ const handleAdminAuth: Handle = async ({ event, resolve }) => {
 };
 
 // Favicon redirect handle
-const handleFavicon: Handle = async ({ event, resolve }) => {
+export const handleFavicon: Handle = async ({ event, resolve }) => {
   const { url, platform } = event;
 
   const faviconMatch = url.pathname.match(

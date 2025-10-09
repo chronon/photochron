@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { handle } from './hooks.server';
+import { handleFavicon } from './hooks.server';
 import type { RequestEvent } from '@sveltejs/kit';
 
 describe('hooks.server', () => {
@@ -39,7 +39,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('https://cdn.example.com/avatar-123/favicon32');
@@ -82,7 +82,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('https://cdn.example.com/avatar-123/favicon16');
@@ -123,7 +123,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('https://cdn.example.com/avatar-123/favicon32');
@@ -164,7 +164,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('https://cdn.example.com/avatar-123/apple180');
@@ -179,7 +179,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('/fallback-favicon-32x32.png');
@@ -201,7 +201,7 @@ describe('hooks.server', () => {
       } as RequestEvent;
 
       const resolve = vi.fn();
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(response.status).toBe(302);
       expect(response.headers.get('Location')).toBe('/fallback-apple-touch-icon.png');
@@ -216,7 +216,7 @@ describe('hooks.server', () => {
       const mockResponse = new Response('OK');
       const resolve = vi.fn(() => Promise.resolve(mockResponse));
 
-      const response = await handle({ event, resolve });
+      const response = await handleFavicon({ event, resolve });
 
       expect(resolve).toHaveBeenCalledWith(event);
       expect(response).toBe(mockResponse);

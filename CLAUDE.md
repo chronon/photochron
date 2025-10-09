@@ -78,11 +78,13 @@ The app stores image metadata in Cloudflare D1:
 The app uses a centralized authentication system for all `/admin/*` routes:
 
 **Architecture:**
+
 - **Cloudflare Access (Edge)** - Primary security boundary, blocks unauthenticated requests
 - **SvelteKit Hooks** - Application-level validation and authorization
 - **KV Authorization** - Per-user authorized client ID lists
 
 **Authentication Flow:**
+
 1. Request hits `/admin/*` route
 2. `handleAdminAuth` hook in `src/hooks.server.ts` intercepts request
 3. Extracts identity from Cloudflare Access headers (`Cf-Access-Client-Id` or `Cf-Access-Jwt-Assertion`)
@@ -91,20 +93,24 @@ The app uses a centralized authentication system for all `/admin/*` routes:
 6. Sets authenticated context in `event.locals.adminAuth` for downstream handlers
 
 **Supported Authentication Types:**
+
 - **Service Tokens** - For automated clients (client ID from `common_name` JWT claim or header)
 - **IdP Users** - For browser-based access (client ID from `email` JWT claim)
 
 **Local Development:**
+
 - Uses development bypass when `CF_ACCESS_TEAM_DOMAIN=dev` (from `.dev.vars`)
 - `DEV_CLIENT_ID` env var provides local authorization without KV lookup
 - Never activates in production (wrangler.jsonc has real team domain)
 
 **Configuration:**
+
 - `CF_ACCESS_TEAM_DOMAIN` - Cloudflare Access team domain (e.g., `https://yourteam.cloudflareaccess.com`)
 - `authorized_client_ids` - Array of allowed client IDs per user in KV config
 - Service token secrets stored securely, never committed to git
 
 **Key Files:**
+
 - `src/lib/auth.ts` - Authentication/authorization functions
 - `src/hooks.server.ts` - Request interception and auth enforcement
 - `src/app.d.ts` - Type definitions for `event.locals.adminAuth`
