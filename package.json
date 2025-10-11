@@ -15,6 +15,7 @@
     "prepare": "svelte-kit sync || echo ''",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "check:all": "pnpm check && pnpm lint && pnpm test",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
     "test": "vitest --run",
