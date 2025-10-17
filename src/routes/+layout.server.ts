@@ -29,7 +29,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
 
   try {
     const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?'
+      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ?'
     )
       .bind(username, PAGE_SIZE)
       .all();

@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   try {
     // Query for PAGE_SIZE + 1 to determine if there are more
     const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?'
+      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?'
     )
       .bind(username, PAGE_SIZE + 1, offset)
       .all();
