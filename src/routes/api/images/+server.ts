@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { extractUserFromDomain } from '$lib/config';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 15;
 
 export const GET: RequestHandler = async ({ url, platform }) => {
   if (!platform?.env?.PCHRON_DB) {
@@ -17,7 +17,7 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   try {
     // Query for PAGE_SIZE + 1 to determine if there are more
     const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?'
+      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?'
     )
       .bind(username, PAGE_SIZE + 1, offset)
       .all();

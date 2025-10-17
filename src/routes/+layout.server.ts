@@ -1,7 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { getConfigFromKV } from '$lib/config';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 15;
 
 export const load: LayoutServerLoad = async ({ url, platform }) => {
   if (!platform?.env?.PCHRON_KV) {
@@ -26,15 +26,19 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
     captured: string;
     uploaded: string;
   }>;
+  let hasMore: boolean;
 
   try {
+    // Query for PAGE_SIZE + 1 to determine if there are more
     const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ?'
+      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ?'
     )
-      .bind(username, PAGE_SIZE)
+      .bind(username, PAGE_SIZE + 1)
       .all();
 
-    images = result.results as typeof images;
+    // Return only PAGE_SIZE images
+    images = result.results.slice(0, PAGE_SIZE) as typeof images;
+    hasMore = result.results.length > PAGE_SIZE;
   } catch (error) {
     console.error('Failed to fetch images from D1:', error);
     throw error;
@@ -50,6 +54,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   return {
     config,
     images,
+    hasMore,
     username
   };
 };
