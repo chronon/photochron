@@ -89,6 +89,7 @@ describe('+layout.server', () => {
         uploaded: '2025-01-02T00:00:00Z'
       });
 
+      expect(result.hasMore).toBe(false);
       expect(result.username).toBe('johndoe');
     });
 

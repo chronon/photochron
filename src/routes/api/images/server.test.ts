@@ -18,7 +18,7 @@ interface ImagesResponse {
 
 describe('api/images/+server', () => {
   describe('GET', () => {
-    it('returns images for user with hasMore=false when less than 6 results', async () => {
+    it('returns images for user with hasMore=false when less than 16 results', async () => {
       const mockD1 = {
         prepare: vi.fn(() => ({
           bind: vi.fn(() => ({
@@ -64,56 +64,21 @@ describe('api/images/+server', () => {
       expect(json.images[1].id).toBe('img2');
     });
 
-    it('returns 5 images with hasMore=true when 6 results returned', async () => {
+    it('returns 15 images with hasMore=true when 16 results returned', async () => {
+      const mockResults = Array.from({ length: 16 }, (_, i) => ({
+        id: `img${i + 1}`,
+        name: `photo${i + 1}`,
+        caption: null,
+        captured: '2025-01-01',
+        uploaded: '2025-01-02'
+      }));
+
       const mockD1 = {
         prepare: vi.fn(() => ({
           bind: vi.fn(() => ({
             all: vi.fn(() =>
               Promise.resolve({
-                results: [
-                  {
-                    id: 'img1',
-                    name: 'photo1',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  },
-                  {
-                    id: 'img2',
-                    name: 'photo2',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  },
-                  {
-                    id: 'img3',
-                    name: 'photo3',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  },
-                  {
-                    id: 'img4',
-                    name: 'photo4',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  },
-                  {
-                    id: 'img5',
-                    name: 'photo5',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  },
-                  {
-                    id: 'img6',
-                    name: 'photo6',
-                    caption: null,
-                    captured: '2025-01-01',
-                    uploaded: '2025-01-02'
-                  }
-                ]
+                results: mockResults
               })
             )
           }))
@@ -132,9 +97,25 @@ describe('api/images/+server', () => {
       const response = await GET(event);
       const json = (await response.json()) as ImagesResponse;
 
-      expect(json.images).toHaveLength(5);
+      expect(json.images).toHaveLength(15);
       expect(json.hasMore).toBe(true);
-      expect(json.images.map((img) => img.id)).toEqual(['img1', 'img2', 'img3', 'img4', 'img5']);
+      expect(json.images.map((img) => img.id)).toEqual([
+        'img1',
+        'img2',
+        'img3',
+        'img4',
+        'img5',
+        'img6',
+        'img7',
+        'img8',
+        'img9',
+        'img10',
+        'img11',
+        'img12',
+        'img13',
+        'img14',
+        'img15'
+      ]);
     });
 
     it('uses offset parameter from query string', async () => {
@@ -164,7 +145,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 6, 10);
+      expect(bindMock).toHaveBeenCalledWith('johndoe', 16, 10);
     });
 
     it('defaults offset to 0 when not provided', async () => {
@@ -194,7 +175,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 6, 0);
+      expect(bindMock).toHaveBeenCalledWith('johndoe', 16, 0);
     });
 
     it('extracts username from domain', async () => {
@@ -223,7 +204,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('alice', 6, 0);
+      expect(bindMock).toHaveBeenCalledWith('alice', 16, 0);
     });
 
     it('returns error when D1 database is unavailable', async () => {

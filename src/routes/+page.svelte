@@ -10,7 +10,7 @@
   let { data }: Props = $props();
 
   let allImages = $state([...data.images]);
-  let hasMore = $state(data.images.length === 5);
+  let hasMore = $state(data.hasMore);
   let isLoading = $state(false);
 
   const loadMore = async () => {
