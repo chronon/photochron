@@ -12,6 +12,7 @@
 - **KV-based configuration** - All user config (CDN, avatars, authorized client IDs) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
+- **Authenticated deletion** - Delete photos via API endpoint with ownership verification
 - **Infinite scroll** - Smooth loading of photo galleries with API pagination
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -155,8 +156,11 @@ src/
 │   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
-│   ├── admin/api/upload/
-│   │   └── +server.ts        # Authenticated upload endpoint (Cloudflare Access + Images + D1)
+│   ├── admin/api/
+│   │   ├── delete/[imageId]/
+│   │   │   └── +server.ts    # Authenticated delete endpoint (Cloudflare Access + ownership verification)
+│   │   └── upload/
+│   │       └── +server.ts    # Authenticated upload endpoint (Cloudflare Access + Images + D1)
 │   ├── api/images/
 │   │   └── +server.ts        # Paginated image data API (D1 queries)
 │   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, D1 image fetching
@@ -203,15 +207,24 @@ CREATE TABLE images (
 );
 ```
 
-**Upload API:**
+**Admin API Endpoints:**
 
-Authenticated endpoint at `admin.example.com/admin/api/upload`:
+Authenticated endpoints for managing photos:
 
-- Validates via Cloudflare Access (service tokens or IdP users)
-- Authorizes client ID against user's `authorized_client_ids` in KV
-- Uploads photo to Cloudflare Images
-- Inserts metadata to D1
-- Returns success response
+- **Upload** (`/admin/api/upload`):
+  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Authorizes client ID against user's `authorized_client_ids` in KV
+  - Uploads photo to Cloudflare Images
+  - Inserts metadata to D1
+  - Returns success response
+
+- **Delete** (`/admin/api/delete/[imageId]`):
+  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Authorizes client ID against user's `authorized_client_ids` in KV
+  - Verifies ownership (prevents cross-user deletion)
+  - Deletes metadata from D1
+  - Deletes photo from Cloudflare Images (graceful degradation)
+  - Returns success response
 
 ## Authentication & Authorization Patterns
 
@@ -424,6 +437,7 @@ Both commands MUST pass or CI will fail.
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
 - **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
 - **Upload endpoint changes**: Modify `src/routes/admin/api/upload/+server.ts`, ensure tests pass
+- **Delete endpoint changes**: Modify `src/routes/admin/api/delete/[imageId]/+server.ts`, ensure tests pass
 
 **Platform considerations:**
 

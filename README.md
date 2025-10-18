@@ -9,6 +9,7 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 - **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/upload`
+- **Photo deletion** - Delete photos via authenticated API endpoint at `domain.com/admin/api/delete/{imageId}`
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -166,6 +167,43 @@ The upload endpoint:
 3. Uploads photo to Cloudflare Images
 4. Inserts metadata to D1 database
 5. Photo immediately appears in gallery
+
+### Delete API
+
+Delete photos from your gallery via the authenticated API endpoint:
+
+**Endpoint:** `DELETE https://example.com/admin/api/delete/{imageId}`
+
+**Authentication:** Cloudflare Access with Service Tokens
+
+**Request:**
+
+```
+Headers:
+  CF-Access-Client-Id: your-service-token-client-id
+  CF-Access-Client-Secret: your-service-token-client-secret
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "imageId": "cloudflare-images-id",
+  "message": "Image deleted successfully"
+}
+```
+
+The delete endpoint:
+
+1. Validates authentication via Cloudflare Access
+2. Checks authorization (client ID must be in user's `authorized_client_ids`)
+3. Verifies image ownership (prevents cross-user deletion)
+4. Deletes metadata from D1 database
+5. Deletes photo from Cloudflare Images
+6. Photo immediately disappears from gallery
+
+**Note:** If Cloudflare Images deletion fails, the endpoint returns success with a warning since D1 is the source of truth for the gallery. Orphaned images can be cleaned up separately.
 
 ## Admin Authentication
 
@@ -330,8 +368,11 @@ src/
 │   ├── config.ts           # Domain-to-user configuration logic
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
-│   ├── admin/api/upload/
-│   │   └── +server.ts      # Upload endpoint with Cloudflare Access auth
+│   ├── admin/api/
+│   │   ├── delete/[imageId]/
+│   │   │   └── +server.ts  # Delete endpoint with Cloudflare Access auth
+│   │   └── upload/
+│   │       └── +server.ts  # Upload endpoint with Cloudflare Access auth
 │   ├── api/images/
 │   │   └── +server.ts      # Image data API endpoint (D1 query)
 │   ├── +layout.server.ts   # D1 data fetching and config extraction
@@ -351,6 +392,7 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 - **KV Configuration** (`src/lib/config.ts`): Fetches global and user config from Cloudflare KV
 - **D1 Database**: Stores image metadata with username-indexed queries
 - **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`): Handles authenticated photo uploads
+- **Delete Endpoint** (`src/routes/admin/api/delete/[imageId]/+server.ts`): Handles authenticated photo deletion
 - **Images API** (`src/routes/api/images/+server.ts`): Returns paginated images from D1
 - **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects using KV config
 - **Server-Side Loading**: Fetches user-specific data based on request domain
@@ -383,6 +425,17 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 5. **Upload to Cloudflare Images**
 6. **Insert to D1** with metadata
 7. **Return success** response
+
+**At Runtime (Delete):**
+
+1. **Request arrives** at `example.com/admin/api/delete/{imageId}`
+2. **Cloudflare Access** validates service token at edge (enforced on `/admin` path)
+3. **Extract username** from domain (`example`)
+4. **Verify authorization** (client ID in `user:example` authorized list)
+5. **Verify ownership** (image belongs to authenticated user)
+6. **Delete from D1** database
+7. **Delete from Cloudflare Images** (graceful degradation if fails)
+8. **Return success** response
 
 ## Deployment
 
