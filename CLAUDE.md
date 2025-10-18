@@ -40,6 +40,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **KV-based configuration** - Global and user config stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
+- **Authenticated deletion** - Delete photos via API endpoint with ownership verification
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Infinite scroll** - Smooth loading with IntersectionObserver
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -50,6 +51,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Page Server Load** (`src/routes/+page.server.ts`) - Passes images data from parent layout
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
 - **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`) - Handles authenticated photo uploads, validates via Cloudflare Access, uploads to Cloudflare Images, inserts to D1
+- **Delete Endpoint** (`src/routes/admin/api/delete/[imageId]/+server.ts`) - Handles authenticated photo deletion, verifies ownership, deletes from D1 and Cloudflare Images
 - **Images API** (`src/routes/api/images/+server.ts`) - Returns paginated images from D1 for infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
 - **Config Module** (`src/lib/config.ts`) - Domain parsing, KV config fetching, and TypeScript interfaces
@@ -115,13 +117,21 @@ The app uses a centralized authentication system for all `/admin/*` routes:
 - `src/hooks.server.ts` - Request interception and auth enforcement
 - `src/app.d.ts` - Type definitions for `event.locals.adminAuth`
 
-### Upload API
+### Admin API Endpoints
 
-The app provides an authenticated upload endpoint at `example.com/admin/api/upload`:
+The app provides authenticated admin endpoints for managing photos:
+
+**Upload API** (`/admin/api/upload`):
 
 - **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
 - **Flow**: Multipart form data → Validate → Upload to Cloudflare Images → Insert to D1 → Return response
 - **Metadata**: name, caption, captured date provided by client; uploaded date added by server
+
+**Delete API** (`/admin/api/delete/[imageId]`):
+
+- **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
+- **Flow**: Extract imageId from URL → Verify ownership → Delete from D1 → Delete from Cloudflare Images → Return response
+- **Ownership**: Ensures users can only delete their own images based on domain-derived username
 
 ### Technology Stack
 
@@ -136,6 +146,7 @@ The app provides an authenticated upload endpoint at `example.com/admin/api/uplo
 - `src/routes/+page.server.ts` - Image data passing from layout
 - `src/routes/+page.svelte` - Main gallery display with infinite scroll
 - `src/routes/admin/api/upload/+server.ts` - Authenticated upload endpoint (Cloudflare Access + D1 + Images)
+- `src/routes/admin/api/delete/[imageId]/+server.ts` - Authenticated delete endpoint (Cloudflare Access + ownership verification)
 - `src/routes/api/images/+server.ts` - Paginated image data API (D1 queries)
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
