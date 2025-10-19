@@ -12,7 +12,7 @@ interface UploadResponse {
 // Mock fetch globally
 global.fetch = vi.fn();
 
-describe('admin/api/upload/+server', () => {
+describe('admin/api/images/+server', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

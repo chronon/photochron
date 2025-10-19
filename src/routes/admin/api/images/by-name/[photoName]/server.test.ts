@@ -3,6 +3,7 @@ import { GET } from './+server';
 import type { RequestHandler } from './$types';
 
 interface LookupResponse {
+  success?: boolean;
   id?: string;
   name?: string;
   captured?: string;
@@ -54,6 +55,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.id).toBe('img-123');
       expect(json.name).toBe('vacation.jpg');
       expect(json.captured).toBe('2024-06-15T18:30:00Z');
@@ -109,6 +111,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.id).toBe('img-555');
       expect(json.name).toBe('vacation.jpg'); // Returns lowercase from database
     });
@@ -144,6 +147,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(404);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Image not found');
       expect(json.id).toBeUndefined();
     });
@@ -163,6 +167,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(401);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Unauthorized');
       expect(json.id).toBeUndefined();
     });
@@ -190,6 +195,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(400);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Invalid photo name');
       expect(json.id).toBeUndefined();
     });
@@ -217,6 +223,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(400);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Invalid photo name');
     });
 
@@ -258,6 +265,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.name).toBe('my photo.jpg');
     });
 
@@ -299,6 +307,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.name).toBe('café.jpg');
     });
 
@@ -325,6 +334,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(500);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Configuration error');
     });
 
@@ -347,6 +357,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(500);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Platform not available');
     });
 
@@ -381,6 +392,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(500);
+      expect(json.success).toBe(false);
       expect(json.error).toBe('Internal server error');
     });
 
@@ -427,6 +439,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.id).toBe('img-123');
     });
 
@@ -473,6 +486,7 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       const json = (await response.json()) as LookupResponse;
 
       expect(response.status).toBe(200);
+      expect(json.success).toBe(true);
       expect(json.id).toBe('img-999');
       expect(json.name).toBe('vacation.jpg');
     });

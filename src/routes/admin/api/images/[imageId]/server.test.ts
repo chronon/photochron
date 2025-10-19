@@ -4,7 +4,7 @@ import type { RequestHandler } from './$types';
 
 interface DeleteResponse {
   success: boolean;
-  imageId?: string;
+  id?: string;
   message?: string;
   warning?: string;
   error?: string;
@@ -13,7 +13,7 @@ interface DeleteResponse {
 // Mock fetch globally
 global.fetch = vi.fn();
 
-describe('admin/api/delete/[imageId]/+server', () => {
+describe('admin/api/images/[imageId]/+server', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -85,7 +85,7 @@ describe('admin/api/delete/[imageId]/+server', () => {
 
       expect(response.status).toBe(200);
       expect(json.success).toBe(true);
-      expect(json.imageId).toBe('img-123');
+      expect(json.id).toBe('img-123');
       expect(json.message).toBe('Image deleted successfully');
       expect(json.warning).toBeUndefined();
     });
