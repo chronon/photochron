@@ -152,6 +152,7 @@ pnpm deploy:preview         # Dry run deployment
 ```
 src/
 ├── lib/
+│   ├── admin-utils.ts         # Shared validation and error handling utilities for admin endpoints
 │   ├── auth.ts                # Authentication and authorization logic
 │   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
@@ -214,7 +215,13 @@ CREATE INDEX idx_username_name_uploaded ON images(username, name COLLATE NOCASE,
 
 **Admin API Endpoints:**
 
-Authenticated endpoints for managing photos:
+Authenticated endpoints for managing photos. All admin endpoints use shared utilities from `src/lib/admin-utils.ts` for consistent validation and error handling:
+
+- **Shared Utilities** (`src/lib/admin-utils.ts`):
+  - `validateAuth()` - Type-safe authentication validation from request locals
+  - `validatePlatformEnv()` - Platform and database validation with optional required bindings
+  - `createErrorResponse()` - Standardized error responses with consistent logging
+  - Pattern: All admin endpoints use discriminated unions for validation results
 
 - **Upload** (`/admin/api/upload`):
   - Validates via Cloudflare Access (service tokens or IdP users)
@@ -445,7 +452,7 @@ Both commands MUST pass or CI will fail.
 - **Database changes**: Create new migration in `migrations/`, apply with `wrangler d1 migrations apply`
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
 - **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with domain and authorized client IDs, then run `pnpm deploy`
-- **Adding admin endpoints**: Place under `/admin/*` path to use centralized authentication, access user info via `locals.adminAuth`
+- **Adding admin endpoints**: Place under `/admin/*` path to use centralized authentication, access user info via `locals.adminAuth`, use shared utilities from `src/lib/admin-utils.ts` for validation and error handling
 - **Authentication changes**: Modify `src/lib/auth.ts` and ensure all tests in `src/lib/auth.test.ts` pass
 - **Authorization changes**: Update user's `authorized_client_ids` in `config/app.jsonc`, then run `pnpm deploy`
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)

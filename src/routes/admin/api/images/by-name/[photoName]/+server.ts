@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
-import { json, type NumericRange } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import { createErrorResponse, validateAuth, validatePlatformEnv } from '$lib/admin-utils';
 
 interface ImageRecord {
   id: string;
@@ -10,18 +11,12 @@ interface ImageRecord {
 
 const LOG_PREFIX = '[Lookup]';
 
-function errorResponse(message: string, status: NumericRange<400, 599>, logDetails?: string) {
-  console.error(`${LOG_PREFIX} ${logDetails || message}`);
-  return json({ error: message }, { status });
-}
-
 export const GET: RequestHandler = async ({ params, platform, locals }) => {
-  // Get authenticated context from locals (set by hooks)
-  if (!locals.adminAuth) {
-    return errorResponse('Unauthorized', 401, 'Admin authentication required');
-  }
+  // Validate authentication
+  const authResult = validateAuth(locals, LOG_PREFIX);
+  if (!authResult.valid) return authResult.response;
+  const { username, identity } = authResult;
 
-  const { username, identity } = locals.adminAuth;
   const { photoName } = params;
 
   // Normalize photo name (trim whitespace)
@@ -33,19 +28,18 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 
   // Validate photoName parameter
   if (!normalizedName) {
-    return errorResponse('Invalid photo name', 400, 'Photo name must be provided');
+    return createErrorResponse(
+      LOG_PREFIX,
+      'Invalid photo name',
+      400,
+      'Photo name must be provided'
+    );
   }
 
-  // Verify platform environment
-  if (!platform?.env) {
-    return errorResponse('Platform not available', 500, 'Platform environment not available');
-  }
-
-  const { PCHRON_DB: db } = platform.env;
-
-  if (!db) {
-    return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
-  }
+  // Validate platform environment
+  const envResult = validatePlatformEnv(platform, LOG_PREFIX);
+  if (!envResult.valid) return envResult.response;
+  const { db } = envResult;
 
   try {
     // Query for image by name (case-insensitive), return most recent if multiple matches
@@ -58,7 +52,12 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
 
     if (!result) {
       console.log(`${LOG_PREFIX} No image found with name: ${normalizedName} for user ${username}`);
-      return errorResponse('Image not found', 404, `No image found with name: ${normalizedName}`);
+      return createErrorResponse(
+        LOG_PREFIX,
+        'Image not found',
+        404,
+        `No image found with name: ${normalizedName}`
+      );
     }
 
     console.log(
@@ -81,7 +80,8 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
       username,
       error
     });
-    return errorResponse(
+    return createErrorResponse(
+      LOG_PREFIX,
       'Internal server error',
       500,
       `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`

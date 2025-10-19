@@ -56,6 +56,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Images API** (`src/routes/api/images/+server.ts`) - Returns paginated images from D1 for infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
 - **Config Module** (`src/lib/config.ts`) - Domain parsing, KV config fetching, and TypeScript interfaces
+- **Admin Utils Module** (`src/lib/admin-utils.ts`) - Shared validation and error handling utilities for admin endpoints
 - **Hooks Server** (`src/hooks.server.ts`) - Intercepts favicon requests and redirects using KV config
 
 ### Configuration System
@@ -164,6 +165,7 @@ The app provides authenticated admin endpoints for managing photos:
 - `src/routes/api/images/+server.ts` - Paginated image data API (D1 queries)
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
+- `src/lib/admin-utils.ts` - Shared validation and error handling utilities for admin endpoints
 - `src/hooks.server.ts` - Dynamic favicon handling using KV config
 - `migrations/0001_initial_schema.sql` - D1 database schema and indexes
 - `migrations/0002_change_sort_to_captured.sql` - Change primary sort order from uploaded to captured date
