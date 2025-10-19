@@ -24,12 +24,15 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
   const { username, identity } = locals.adminAuth;
   const { photoName } = params;
 
+  // Normalize photo name (trim whitespace)
+  const normalizedName = photoName.trim();
+
   console.log(
-    `${LOG_PREFIX} Lookup request from ${identity.type}: ${identity.clientId} for user ${username}, photo name: ${photoName}`
+    `${LOG_PREFIX} Lookup request from ${identity.type}: ${identity.clientId} for user ${username}, photo name: ${normalizedName}`
   );
 
   // Validate photoName parameter
-  if (!photoName || photoName.trim() === '') {
+  if (!normalizedName) {
     return errorResponse('Invalid photo name', 400, 'Photo name must be provided');
   }
 
@@ -50,12 +53,12 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
       .prepare(
         'SELECT id, name, captured, uploaded FROM images WHERE username = ? AND name = ? COLLATE NOCASE ORDER BY uploaded DESC LIMIT 1'
       )
-      .bind(username, photoName)
+      .bind(username, normalizedName)
       .first<ImageRecord>();
 
     if (!result) {
-      console.log(`${LOG_PREFIX} No image found with name: ${photoName} for user ${username}`);
-      return errorResponse('Image not found', 404, `No image found with name: ${photoName}`);
+      console.log(`${LOG_PREFIX} No image found with name: ${normalizedName} for user ${username}`);
+      return errorResponse('Image not found', 404, `No image found with name: ${normalizedName}`);
     }
 
     console.log(
@@ -74,7 +77,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     );
   } catch (error) {
     console.error(`${LOG_PREFIX} Unexpected error during lookup:`, {
-      photoName,
+      photoName: normalizedName,
       username,
       error
     });

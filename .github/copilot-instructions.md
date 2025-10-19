@@ -207,6 +207,9 @@ CREATE TABLE images (
   uploaded TEXT NOT NULL,           -- ISO8601 date when uploaded
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
+
+CREATE INDEX idx_username_captured ON images(username, captured DESC);
+CREATE INDEX idx_username_name_uploaded ON images(username, name COLLATE NOCASE, uploaded DESC);
 ```
 
 **Admin API Endpoints:**

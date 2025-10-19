@@ -75,7 +75,7 @@ The app stores image metadata in Cloudflare D1:
 - **Table**: `images` - Contains id, username, name, caption, captured, uploaded, created_at
 - **Indexes**:
   - `idx_username_captured` - Optimizes gallery queries by username and captured date
-  - `idx_username_name_uploaded` - Optimizes lookup-by-name queries
+  - `idx_username_name_uploaded` - Optimizes lookup-by-name queries (uses `COLLATE NOCASE` for case-insensitive matching)
 - **Queries**:
   - Gallery: `SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?`
   - Lookup: `SELECT id, name, captured, uploaded FROM images WHERE username = ? AND name = ? COLLATE NOCASE ORDER BY uploaded DESC LIMIT 1`
@@ -168,6 +168,7 @@ The app provides authenticated admin endpoints for managing photos:
 - `migrations/0001_initial_schema.sql` - D1 database schema and indexes
 - `migrations/0002_change_sort_to_captured.sql` - Change primary sort order from uploaded to captured date
 - `migrations/0003_add_name_index.sql` - Add composite index for lookup-by-name queries
+- `migrations/0004_fix_name_index_collation.sql` - Fix index collation for case-insensitive matching
 - `config/app.jsonc` - Source of truth for all configuration (JSONC format, gitignored)
 - `config/app-example.json` - Example configuration template
 - `scripts/build-config.ts` - Master build script that runs wrangler and KV generators

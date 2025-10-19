@@ -127,7 +127,7 @@ CREATE TABLE images (
 );
 
 CREATE INDEX idx_username_captured ON images(username, captured DESC);
-CREATE INDEX idx_username_name_uploaded ON images(username, name, uploaded DESC);
+CREATE INDEX idx_username_name_uploaded ON images(username, name COLLATE NOCASE, uploaded DESC);
 ```
 
 ### Upload API
@@ -406,7 +406,8 @@ config/
 migrations/
 ├── 0001_initial_schema.sql # D1 database schema
 ├── 0002_change_sort_to_captured.sql # Change sort from uploaded to captured
-└── 0003_add_name_index.sql # Add index for lookup by name
+├── 0003_add_name_index.sql # Add index for lookup by name
+└── 0004_fix_name_index_collation.sql # Fix index collation for case-insensitive matching
 scripts/
 ├── build-config.ts         # Master build script
 ├── build-wrangler.ts       # Generates wrangler.jsonc

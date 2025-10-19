@@ -66,6 +66,53 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       );
     });
 
+    it('performs case-insensitive name matching', async () => {
+      const mockD1 = {
+        prepare: vi.fn(() => ({
+          bind: vi.fn((username: string, photoName: string) => {
+            // Simulate database case-insensitive comparison
+            expect(username).toBe('johndoe');
+            expect(photoName).toBe('VACATION.JPG'); // uppercase in request
+            return {
+              first: vi.fn(() =>
+                Promise.resolve({
+                  id: 'img-555',
+                  name: 'vacation.jpg', // lowercase in database
+                  captured: '2024-10-01T10:00:00Z',
+                  uploaded: '2024-10-01T10:30:00Z'
+                })
+              )
+            };
+          })
+        }))
+      } as unknown as D1Database;
+
+      const event = {
+        params: { photoName: 'VACATION.JPG' }, // uppercase request
+        platform: {
+          env: {
+            PCHRON_DB: mockD1
+          }
+        },
+        locals: {
+          adminAuth: {
+            username: 'johndoe',
+            identity: {
+              type: 'service_token' as const,
+              clientId: 'client-123'
+            }
+          }
+        }
+      } as unknown as Parameters<RequestHandler>[0];
+
+      const response = await GET(event);
+      const json = (await response.json()) as LookupResponse;
+
+      expect(response.status).toBe(200);
+      expect(json.id).toBe('img-555');
+      expect(json.name).toBe('vacation.jpg'); // Returns lowercase from database
+    });
+
     it('returns 404 when image does not exist', async () => {
       const mockD1 = {
         prepare: vi.fn(() => ({
@@ -381,6 +428,53 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
 
       expect(response.status).toBe(200);
       expect(json.id).toBe('img-123');
+    });
+
+    it('trims leading and trailing whitespace from photo name', async () => {
+      const mockD1 = {
+        prepare: vi.fn(() => ({
+          bind: vi.fn((username: string, photoName: string) => {
+            // Verify the photoName is trimmed
+            expect(username).toBe('johndoe');
+            expect(photoName).toBe('vacation.jpg'); // Should be trimmed
+            return {
+              first: vi.fn(() =>
+                Promise.resolve({
+                  id: 'img-999',
+                  name: 'vacation.jpg',
+                  captured: '2024-09-01T12:00:00Z',
+                  uploaded: '2024-09-01T12:30:00Z'
+                })
+              )
+            };
+          })
+        }))
+      } as unknown as D1Database;
+
+      const event = {
+        params: { photoName: '  vacation.jpg  ' }, // Leading and trailing spaces
+        platform: {
+          env: {
+            PCHRON_DB: mockD1
+          }
+        },
+        locals: {
+          adminAuth: {
+            username: 'johndoe',
+            identity: {
+              type: 'service_token' as const,
+              clientId: 'client-123'
+            }
+          }
+        }
+      } as unknown as Parameters<RequestHandler>[0];
+
+      const response = await GET(event);
+      const json = (await response.json()) as LookupResponse;
+
+      expect(response.status).toBe(200);
+      expect(json.id).toBe('img-999');
+      expect(json.name).toBe('vacation.jpg');
     });
   });
 });
