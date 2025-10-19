@@ -51,6 +51,7 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 - **Page Server Load** (`src/routes/+page.server.ts`) - Passes images data from parent layout
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
 - **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`) - Handles authenticated photo uploads, validates via Cloudflare Access, uploads to Cloudflare Images, inserts to D1
+- **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`) - Finds image ID by photo name with case-insensitive matching, returns most recent if duplicates exist
 - **Delete Endpoint** (`src/routes/admin/api/delete/[imageId]/+server.ts`) - Handles authenticated photo deletion, verifies ownership, deletes from D1 and Cloudflare Images
 - **Images API** (`src/routes/api/images/+server.ts`) - Returns paginated images from D1 for infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
@@ -72,8 +73,12 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 The app stores image metadata in Cloudflare D1:
 
 - **Table**: `images` - Contains id, username, name, caption, captured, uploaded, created_at
-- **Index**: `idx_username_uploaded` - Optimizes queries by username and upload date
-- **Queries**: Gallery loads images with `SELECT * FROM images WHERE username = ? ORDER BY uploaded DESC LIMIT ? OFFSET ?`
+- **Indexes**:
+  - `idx_username_captured` - Optimizes gallery queries by username and captured date
+  - `idx_username_name_uploaded` - Optimizes lookup-by-name queries (uses `COLLATE NOCASE` for case-insensitive matching)
+- **Queries**:
+  - Gallery: `SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?`
+  - Lookup: `SELECT id, name, captured, uploaded FROM images WHERE username = ? AND name = ? COLLATE NOCASE ORDER BY uploaded DESC LIMIT 1`
 
 ### Authentication & Authorization
 
@@ -127,11 +132,19 @@ The app provides authenticated admin endpoints for managing photos:
 - **Flow**: Multipart form data → Validate → Upload to Cloudflare Images → Insert to D1 → Return response
 - **Metadata**: name, caption, captured date provided by client; uploaded date added by server
 
+**Lookup API** (`/admin/api/images/by-name/[photoName]`):
+
+- **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
+- **Flow**: Extract photoName from URL → Query D1 with case-insensitive match → Return most recent if duplicates → Return image metadata with ID
+- **Use case**: Enables automation tools (like Apple Shortcuts) to find image ID by photo name for deletion
+- **Behavior**: Returns most recent photo if multiple photos have same name
+
 **Delete API** (`/admin/api/delete/[imageId]`):
 
 - **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
 - **Flow**: Extract imageId from URL → Verify ownership → Delete from D1 → Delete from Cloudflare Images → Return response
 - **Ownership**: Ensures users can only delete their own images based on domain-derived username
+- **Workflow with Lookup**: For automation tools with only photo names, use lookup endpoint first to get ID, then use delete endpoint
 
 ### Technology Stack
 
@@ -146,12 +159,16 @@ The app provides authenticated admin endpoints for managing photos:
 - `src/routes/+page.server.ts` - Image data passing from layout
 - `src/routes/+page.svelte` - Main gallery display with infinite scroll
 - `src/routes/admin/api/upload/+server.ts` - Authenticated upload endpoint (Cloudflare Access + D1 + Images)
+- `src/routes/admin/api/images/by-name/[photoName]/+server.ts` - Authenticated lookup endpoint (finds image ID by photo name)
 - `src/routes/admin/api/delete/[imageId]/+server.ts` - Authenticated delete endpoint (Cloudflare Access + ownership verification)
 - `src/routes/api/images/+server.ts` - Paginated image data API (D1 queries)
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
 - `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
 - `src/hooks.server.ts` - Dynamic favicon handling using KV config
 - `migrations/0001_initial_schema.sql` - D1 database schema and indexes
+- `migrations/0002_change_sort_to_captured.sql` - Change primary sort order from uploaded to captured date
+- `migrations/0003_add_name_index.sql` - Add composite index for lookup-by-name queries
+- `migrations/0004_fix_name_index_collation.sql` - Fix index collation for case-insensitive matching
 - `config/app.jsonc` - Source of truth for all configuration (JSONC format, gitignored)
 - `config/app-example.json` - Example configuration template
 - `scripts/build-config.ts` - Master build script that runs wrangler and KV generators
