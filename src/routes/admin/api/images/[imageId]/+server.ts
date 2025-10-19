@@ -138,7 +138,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
     return json(
       {
         success: true,
-        imageId,
+        id: imageId,
         message: imagesWarning ? 'Image deleted from database' : 'Image deleted successfully',
         ...(imagesWarning && { warning: imagesWarning })
       },

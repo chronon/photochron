@@ -67,6 +67,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     // Return image metadata
     return json(
       {
+        success: true,
         id: result.id,
         name: result.name,
         captured: result.captured,
