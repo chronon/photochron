@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
-import { json, type NumericRange } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import { createErrorResponse, validateAuth, validatePlatformEnv } from '$lib/admin-utils';
 
 interface ImageRecord {
   id: string;
@@ -16,18 +17,12 @@ interface CloudflareImagesDeleteResponse {
 
 const LOG_PREFIX = '[Delete]';
 
-function errorResponse(message: string, status: NumericRange<400, 599>, logDetails?: string) {
-  console.error(`${LOG_PREFIX} ${logDetails || message}`);
-  return json({ success: false, error: message }, { status });
-}
-
 export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
-  // Get authenticated context from locals (set by hooks)
-  if (!locals.adminAuth) {
-    return errorResponse('Unauthorized', 401, 'Admin authentication required');
-  }
+  // Validate authentication
+  const authResult = validateAuth(locals, LOG_PREFIX);
+  if (!authResult.valid) return authResult.response;
+  const { username, identity } = authResult;
 
-  const { username, identity } = locals.adminAuth;
   const { imageId } = params;
 
   console.log(
@@ -36,23 +31,14 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 
   // Validate imageId parameter
   if (!imageId || imageId.trim() === '') {
-    return errorResponse('Invalid image ID', 400, 'Image ID must be provided');
+    return createErrorResponse(LOG_PREFIX, 'Invalid image ID', 400, 'Image ID must be provided');
   }
 
-  // Verify platform environment
-  if (!platform?.env) {
-    return errorResponse('Platform not available', 500, 'Platform environment not available');
-  }
-
-  const { PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
-
-  if (!db) {
-    return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
-  }
-
-  if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {
-    return errorResponse('Configuration error', 500, 'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN');
-  }
+  // Validate platform environment
+  const envResult = validatePlatformEnv(platform, LOG_PREFIX, ['CF_ACCOUNT_ID', 'CF_IMAGES_TOKEN']);
+  if (!envResult.valid) return envResult.response;
+  const { db, env } = envResult;
+  const { CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = env;
 
   try {
     // Verify image exists and belongs to this user
@@ -72,14 +58,20 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
         console.warn(
           `${LOG_PREFIX} User ${username} attempted to delete image ${imageId} owned by ${existsResult.username}`
         );
-        return errorResponse(
+        return createErrorResponse(
+          LOG_PREFIX,
           'Forbidden',
           403,
           `Image ${imageId} belongs to different user: ${existsResult.username}`
         );
       }
 
-      return errorResponse('Image not found', 404, `No image found with ID ${imageId}`);
+      return createErrorResponse(
+        LOG_PREFIX,
+        'Image not found',
+        404,
+        `No image found with ID ${imageId}`
+      );
     }
 
     console.log(
@@ -94,7 +86,12 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
 
     if (!deleteResult.success) {
       console.error(`${LOG_PREFIX} D1 deletion failed:`, deleteResult.error);
-      return errorResponse('Database error', 500, 'Failed to delete image from database');
+      return createErrorResponse(
+        LOG_PREFIX,
+        'Database error',
+        500,
+        'Failed to delete image from database'
+      );
     }
 
     console.log(`${LOG_PREFIX} Successfully deleted image ${imageId} from D1`);
@@ -103,14 +100,14 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
     let imagesWarning: string | undefined;
 
     try {
-      const imagesApiUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1/${imageId}`;
+      const imagesApiUrl = `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID as string}/images/v1/${imageId}`;
 
       console.log(`${LOG_PREFIX} Deleting from Cloudflare Images: ${imageId}`);
 
       const imagesResponse = await fetch(imagesApiUrl, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${CF_IMAGES_TOKEN}`
+          Authorization: `Bearer ${CF_IMAGES_TOKEN as string}`
         }
       });
 
@@ -153,7 +150,8 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
       username,
       error
     });
-    return errorResponse(
+    return createErrorResponse(
+      LOG_PREFIX,
       'Internal server error',
       500,
       `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`

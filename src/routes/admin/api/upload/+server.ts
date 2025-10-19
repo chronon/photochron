@@ -1,5 +1,6 @@
 import type { RequestHandler } from './$types';
-import { json, type NumericRange } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
+import { createErrorResponse, validateAuth, validatePlatformEnv } from '$lib/admin-utils';
 
 interface ImageMetadata {
   name: string;
@@ -24,11 +25,6 @@ const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'] 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 const LOG_PREFIX = '[Upload]';
-
-function errorResponse(message: string, status: NumericRange<400, 599>, logDetails?: string) {
-  console.error(`${LOG_PREFIX} ${logDetails || message}`);
-  return json({ success: false, error: message }, { status });
-}
 
 function validateMetadata(
   metadataStr: string
@@ -200,49 +196,43 @@ async function saveImageMetadata(
 }
 
 export const POST: RequestHandler = async ({ request, platform, locals }) => {
-  // Get authenticated context from locals (set by hooks)
-  if (!locals.adminAuth) {
-    return errorResponse('Unauthorized', 401, 'Admin authentication required');
-  }
-
-  const { username, identity } = locals.adminAuth;
+  // Validate authentication
+  const authResult = validateAuth(locals, LOG_PREFIX);
+  if (!authResult.valid) return authResult.response;
+  const { username, identity } = authResult;
 
   console.log(
     `${LOG_PREFIX} Upload request from ${identity.type}: ${identity.clientId} for user ${username}`
   );
 
-  // Verify platform environment
-  if (!platform?.env) {
-    return errorResponse('Platform not available', 500, 'Platform environment not available');
-  }
-
-  const { PCHRON_DB: db, CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = platform.env;
-
-  if (!db) {
-    return errorResponse('Configuration error', 500, 'PCHRON_DB database binding not available');
-  }
-
-  if (!CF_ACCOUNT_ID || !CF_IMAGES_TOKEN) {
-    return errorResponse('Configuration error', 500, 'Missing CF_ACCOUNT_ID or CF_IMAGES_TOKEN');
-  }
+  // Validate platform environment
+  const envResult = validatePlatformEnv(platform, LOG_PREFIX, ['CF_ACCOUNT_ID', 'CF_IMAGES_TOKEN']);
+  if (!envResult.valid) return envResult.response;
+  const { db, env } = envResult;
+  const { CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = env;
 
   // Parse form data
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch (error) {
-    return errorResponse('Invalid form data', 400, `Failed to parse form data: ${error}`);
+    return createErrorResponse(
+      LOG_PREFIX,
+      'Invalid form data',
+      400,
+      `Failed to parse form data: ${error}`
+    );
   }
 
   // Extract and validate file
   const file = formData.get('file');
   if (!file || !(file instanceof File)) {
-    return errorResponse('Missing or invalid file', 400);
+    return createErrorResponse(LOG_PREFIX, 'Missing or invalid file', 400);
   }
 
   const fileValidation = validateFile(file);
   if (!fileValidation.valid) {
-    return errorResponse(fileValidation.error, 400);
+    return createErrorResponse(LOG_PREFIX, fileValidation.error, 400);
   }
 
   console.log(
@@ -252,12 +242,12 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
   // Extract and validate metadata
   const metadataStr = formData.get('metadata');
   if (!metadataStr || typeof metadataStr !== 'string') {
-    return errorResponse('Missing or invalid metadata', 400);
+    return createErrorResponse(LOG_PREFIX, 'Missing or invalid metadata', 400);
   }
 
   const metadataValidation = validateMetadata(metadataStr);
   if (!metadataValidation.valid) {
-    return errorResponse(metadataValidation.error, 400);
+    return createErrorResponse(LOG_PREFIX, metadataValidation.error, 400);
   }
 
   const metadata = metadataValidation.data;
@@ -272,12 +262,12 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
     username,
     metadata,
     uploadedTimestamp,
-    CF_ACCOUNT_ID,
-    CF_IMAGES_TOKEN
+    CF_ACCOUNT_ID as string,
+    CF_IMAGES_TOKEN as string
   );
 
   if (!uploadResult.success) {
-    return errorResponse(uploadResult.error, 500);
+    return createErrorResponse(LOG_PREFIX, uploadResult.error, 500);
   }
 
   // Save metadata to D1
@@ -290,7 +280,7 @@ export const POST: RequestHandler = async ({ request, platform, locals }) => {
   );
 
   if (!saveResult.success) {
-    return errorResponse(saveResult.error, 500);
+    return createErrorResponse(LOG_PREFIX, saveResult.error, 500);
   }
 
   // Return success
