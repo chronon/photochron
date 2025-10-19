@@ -158,12 +158,12 @@ src/
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
 │   ├── admin/api/
-│   │   ├── delete/[imageId]/
-│   │   │   └── +server.ts    # Authenticated delete endpoint (Cloudflare Access + ownership verification)
-│   │   ├── images/by-name/[photoName]/
-│   │   │   └── +server.ts    # Authenticated lookup endpoint (finds image ID by photo name)
-│   │   └── upload/
-│   │       └── +server.ts    # Authenticated upload endpoint (Cloudflare Access + Images + D1)
+│   │   └── images/
+│   │       ├── +server.ts    # Authenticated upload endpoint (POST, Cloudflare Access + Images + D1)
+│   │       ├── [imageId]/
+│   │       │   └── +server.ts    # Authenticated delete endpoint (DELETE, Cloudflare Access + ownership verification)
+│   │       └── by-name/[photoName]/
+│   │           └── +server.ts    # Authenticated lookup endpoint (GET, finds image ID by photo name)
 │   ├── api/images/
 │   │   └── +server.ts        # Paginated image data API (D1 queries)
 │   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, D1 image fetching
@@ -223,29 +223,31 @@ Authenticated endpoints for managing photos. All admin endpoints use shared util
   - `createErrorResponse()` - Standardized error responses with consistent logging
   - Pattern: All admin endpoints use discriminated unions for validation results
 
-- **Upload** (`/admin/api/upload`):
+- **Upload** (`POST /admin/api/images`):
   - Validates via Cloudflare Access (service tokens or IdP users)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Uploads photo to Cloudflare Images
   - Inserts metadata to D1
-  - Returns success response
+  - Returns `{ success: true, id: string, filename: string, uploaded: string }`
 
-- **Lookup** (`/admin/api/images/by-name/[photoName]`):
+- **Lookup** (`GET /admin/api/images/by-name/[photoName]`):
   - Validates via Cloudflare Access (service tokens or IdP users)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Searches for photo by name (case-insensitive)
   - Returns most recent photo if multiple matches exist
-  - Returns image metadata including ID for use with delete endpoint
+  - Returns `{ success: true, id: string, name: string, captured: string, uploaded: string }`
   - Use case: Enables automation tools (like Apple Shortcuts) to find image ID by photo name
 
-- **Delete** (`/admin/api/delete/[imageId]`):
+- **Delete** (`DELETE /admin/api/images/[imageId]`):
   - Validates via Cloudflare Access (service tokens or IdP users)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Verifies ownership (prevents cross-user deletion)
   - Deletes metadata from D1
   - Deletes photo from Cloudflare Images (graceful degradation)
-  - Returns success response
+  - Returns `{ success: true, id: string, message: string, warning?: string }`
   - Workflow with Lookup: For automation tools with only photo names, use lookup endpoint first to get ID
+
+**Error Responses**: All endpoints return `{ success: false, error: string }`
 
 ## Authentication & Authorization Patterns
 
@@ -380,7 +382,7 @@ const event = {
 
 - **example.com** → username: `example` → D1: `SELECT * FROM images WHERE username = 'example'`
 - **photos.jane-doe.com** → username: `jane-doe` → D1: `SELECT * FROM images WHERE username = 'jane-doe'`
-- **admin.example.com/admin/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
+- **admin.example.com/admin/api/images** → Authenticated upload → Cloudflare Images + D1 insert
 
 ### Dynamic Favicon System
 
@@ -457,9 +459,9 @@ Both commands MUST pass or CI will fail.
 - **Authorization changes**: Update user's `authorized_client_ids` in `config/app.jsonc`, then run `pnpm deploy`
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
 - **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
-- **Upload endpoint changes**: Modify `src/routes/admin/api/upload/+server.ts`, ensure tests pass
+- **Upload endpoint changes**: Modify `src/routes/admin/api/images/+server.ts`, ensure tests pass
 - **Lookup endpoint changes**: Modify `src/routes/admin/api/images/by-name/[photoName]/+server.ts`, ensure tests pass
-- **Delete endpoint changes**: Modify `src/routes/admin/api/delete/[imageId]/+server.ts`, ensure tests pass
+- **Delete endpoint changes**: Modify `src/routes/admin/api/images/[imageId]/+server.ts`, ensure tests pass
 
 **Platform considerations:**
 

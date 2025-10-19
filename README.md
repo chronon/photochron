@@ -8,8 +8,8 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 - **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
 - **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
-- **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/upload`
-- **Photo deletion** - Delete photos via authenticated API endpoint at `domain.com/admin/api/delete/{imageId}`
+- **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/images`
+- **Photo deletion** - Delete photos via authenticated API endpoint at `domain.com/admin/api/images/{imageId}`
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -21,7 +21,7 @@ The application extracts the username from the domain name, loads configuration 
 
 1. **Domain** → **Username** → **KV Config** → **D1 Images**
 2. **example.com** → `example` → KV: `user:example` → D1: `SELECT * FROM images WHERE username = 'example'`
-3. **jane.com/admin/api/upload** → Authenticated upload → Cloudflare Images + D1 insert
+3. **jane.com/admin/api/images** → Authenticated upload → Cloudflare Images + D1 insert
 
 **Configuration** (CDN URLs, avatars, authorized client IDs) is stored in KV at deployment time.
 **Content** (image metadata) is stored in D1 database and queried at runtime.
@@ -134,7 +134,7 @@ CREATE INDEX idx_username_name_uploaded ON images(username, name COLLATE NOCASE,
 
 Upload photos to your gallery via the authenticated API endpoint:
 
-**Endpoint:** `POST https://example.com/admin/api/upload`
+**Endpoint:** `POST https://example.com/admin/api/images`
 
 **Authentication:** Cloudflare Access with Service Tokens
 
@@ -157,6 +157,7 @@ Body (multipart/form-data):
 {
   "success": true,
   "id": "cloudflare-images-id",
+  "filename": "username_IMG_1234.jpg",
   "uploaded": "2025-01-15T20:15:00Z"
 }
 ```
@@ -189,6 +190,7 @@ Headers:
 
 ```json
 {
+  "success": true,
   "id": "cloudflare-images-id",
   "name": "vacation.jpg",
   "captured": "2024-06-15T18:30:00Z",
@@ -200,6 +202,7 @@ Headers:
 
 ```json
 {
+  "success": false,
   "error": "Image not found"
 }
 ```
@@ -218,7 +221,7 @@ The lookup endpoint:
 
 Delete photos from your gallery via the authenticated API endpoint:
 
-**Endpoint:** `DELETE https://example.com/admin/api/delete/{imageId}`
+**Endpoint:** `DELETE https://example.com/admin/api/images/{imageId}`
 
 **Authentication:** Cloudflare Access with Service Tokens
 
@@ -235,7 +238,7 @@ Headers:
 ```json
 {
   "success": true,
-  "imageId": "cloudflare-images-id",
+  "id": "cloudflare-images-id",
   "message": "Image deleted successfully"
 }
 ```
@@ -368,7 +371,7 @@ CF_ACCESS_TEAM_DOMAIN=dev
 
 - `src/lib/auth.ts` - Authentication and authorization functions
 - `src/hooks.server.ts` - `handleAdminAuth` hook for request interception
-- `src/routes/admin/api/upload/+server.ts` - Upload endpoint using authenticated context
+- `src/routes/admin/api/images/+server.ts` - Upload endpoint using authenticated context
 - `src/app.d.ts` - TypeScript types for authenticated context
 
 ## Development Commands
@@ -420,12 +423,12 @@ src/
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
 │   ├── admin/api/
-│   │   ├── delete/[imageId]/
-│   │   │   └── +server.ts  # Delete endpoint with Cloudflare Access auth
-│   │   ├── images/by-name/[photoName]/
-│   │   │   └── +server.ts  # Lookup endpoint for finding image ID by name
-│   │   └── upload/
-│   │       └── +server.ts  # Upload endpoint with Cloudflare Access auth
+│   │   └── images/
+│   │       ├── +server.ts  # Upload endpoint (POST) with Cloudflare Access auth
+│   │       ├── [imageId]/
+│   │       │   └── +server.ts  # Delete endpoint (DELETE) with Cloudflare Access auth
+│   │       └── by-name/[photoName]/
+│   │           └── +server.ts  # Lookup endpoint (GET) for finding image ID by name
 │   ├── api/images/
 │   │   └── +server.ts      # Image data API endpoint (D1 query)
 │   ├── +layout.server.ts   # D1 data fetching and config extraction
@@ -444,9 +447,9 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 - **Domain Extraction** (`src/lib/config.ts`): Parses hostname to determine user
 - **KV Configuration** (`src/lib/config.ts`): Fetches global and user config from Cloudflare KV
 - **D1 Database**: Stores image metadata with username-indexed queries
-- **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`): Handles authenticated photo uploads
-- **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`): Finds image ID by photo name (for automation)
-- **Delete Endpoint** (`src/routes/admin/api/delete/[imageId]/+server.ts`): Handles authenticated photo deletion
+- **Upload Endpoint** (`src/routes/admin/api/images/+server.ts`): Handles authenticated photo uploads (POST)
+- **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`): Finds image ID by photo name (GET, for automation)
+- **Delete Endpoint** (`src/routes/admin/api/images/[imageId]/+server.ts`): Handles authenticated photo deletion (DELETE)
 - **Images API** (`src/routes/api/images/+server.ts`): Returns paginated images from D1
 - **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects using KV config
 - **Server-Side Loading**: Fetches user-specific data based on request domain
@@ -472,7 +475,7 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 
 **At Runtime (Upload):**
 
-1. **Request arrives** at `example.com/admin/api/upload`
+1. **Request arrives** at `example.com/admin/api/images`
 2. **Cloudflare Access** validates service token at edge (enforced on `/admin` path)
 3. **Extract username** from domain (`example`)
 4. **Verify authorization** (client ID in `user:example` authorized list)
@@ -482,7 +485,7 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 
 **At Runtime (Delete):**
 
-1. **Request arrives** at `example.com/admin/api/delete/{imageId}`
+1. **Request arrives** at `example.com/admin/api/images/{imageId}`
 2. **Cloudflare Access** validates service token at edge (enforced on `/admin` path)
 3. **Extract username** from domain (`example`)
 4. **Verify authorization** (client ID in `user:example` authorized list)
