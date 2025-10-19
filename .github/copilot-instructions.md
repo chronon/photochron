@@ -159,6 +159,8 @@ src/
 │   ├── admin/api/
 │   │   ├── delete/[imageId]/
 │   │   │   └── +server.ts    # Authenticated delete endpoint (Cloudflare Access + ownership verification)
+│   │   ├── images/by-name/[photoName]/
+│   │   │   └── +server.ts    # Authenticated lookup endpoint (finds image ID by photo name)
 │   │   └── upload/
 │   │       └── +server.ts    # Authenticated upload endpoint (Cloudflare Access + Images + D1)
 │   ├── api/images/
@@ -218,6 +220,14 @@ Authenticated endpoints for managing photos:
   - Inserts metadata to D1
   - Returns success response
 
+- **Lookup** (`/admin/api/images/by-name/[photoName]`):
+  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Authorizes client ID against user's `authorized_client_ids` in KV
+  - Searches for photo by name (case-insensitive)
+  - Returns most recent photo if multiple matches exist
+  - Returns image metadata including ID for use with delete endpoint
+  - Use case: Enables automation tools (like Apple Shortcuts) to find image ID by photo name
+
 - **Delete** (`/admin/api/delete/[imageId]`):
   - Validates via Cloudflare Access (service tokens or IdP users)
   - Authorizes client ID against user's `authorized_client_ids` in KV
@@ -225,6 +235,7 @@ Authenticated endpoints for managing photos:
   - Deletes metadata from D1
   - Deletes photo from Cloudflare Images (graceful degradation)
   - Returns success response
+  - Workflow with Lookup: For automation tools with only photo names, use lookup endpoint first to get ID
 
 ## Authentication & Authorization Patterns
 
@@ -437,6 +448,7 @@ Both commands MUST pass or CI will fail.
 - **Configuration changes**: Edit `config/app.jsonc` (never edit auto-generated files)
 - **Build script changes**: Modify files in `scripts/`, test with `pnpm config:build`
 - **Upload endpoint changes**: Modify `src/routes/admin/api/upload/+server.ts`, ensure tests pass
+- **Lookup endpoint changes**: Modify `src/routes/admin/api/images/by-name/[photoName]/+server.ts`, ensure tests pass
 - **Delete endpoint changes**: Modify `src/routes/admin/api/delete/[imageId]/+server.ts`, ensure tests pass
 
 **Platform considerations:**

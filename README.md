@@ -126,7 +126,8 @@ CREATE TABLE images (
   created_at INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE INDEX idx_username_uploaded ON images(username, uploaded DESC);
+CREATE INDEX idx_username_captured ON images(username, captured DESC);
+CREATE INDEX idx_username_name_uploaded ON images(username, name, uploaded DESC);
 ```
 
 ### Upload API
@@ -168,6 +169,51 @@ The upload endpoint:
 4. Inserts metadata to D1 database
 5. Photo immediately appears in gallery
 
+### Lookup API
+
+Look up an image ID by photo name (useful for automation like Apple Shortcuts):
+
+**Endpoint:** `GET https://example.com/admin/api/images/by-name/{photoName}`
+
+**Authentication:** Cloudflare Access with Service Tokens
+
+**Request:**
+
+```
+Headers:
+  CF-Access-Client-Id: your-service-token-client-id
+  CF-Access-Client-Secret: your-service-token-client-secret
+```
+
+**Response (Success):**
+
+```json
+{
+  "id": "cloudflare-images-id",
+  "name": "vacation.jpg",
+  "captured": "2024-06-15T18:30:00Z",
+  "uploaded": "2024-06-15T19:00:00Z"
+}
+```
+
+**Response (Not Found):**
+
+```json
+{
+  "error": "Image not found"
+}
+```
+
+The lookup endpoint:
+
+1. Validates authentication via Cloudflare Access
+2. Checks authorization (client ID must be in user's `authorized_client_ids`)
+3. Searches for photo by name (case-insensitive)
+4. Returns most recent photo if multiple matches exist
+5. Returns image metadata including ID for use with delete endpoint
+
+**Note:** Photo name matching is case-insensitive. If multiple photos have the same name, the most recently uploaded photo is returned.
+
 ### Delete API
 
 Delete photos from your gallery via the authenticated API endpoint:
@@ -204,6 +250,8 @@ The delete endpoint:
 6. Photo immediately disappears from gallery
 
 **Note:** If Cloudflare Images deletion fails, the endpoint returns success with a warning since D1 is the source of truth for the gallery. Orphaned images can be cleaned up separately.
+
+**Workflow with Lookup:** For automation tools that only have access to photo names (like Apple Shortcuts), use the lookup endpoint first to get the image ID, then use that ID with the delete endpoint.
 
 ## Admin Authentication
 
@@ -356,7 +404,9 @@ config/
 ├── app-example.json        # Example configuration template
 ├── app.kv.json             # Auto-generated KV data for upload
 migrations/
-└── 0001_initial_schema.sql # D1 database schema
+├── 0001_initial_schema.sql # D1 database schema
+├── 0002_change_sort_to_captured.sql # Change sort from uploaded to captured
+└── 0003_add_name_index.sql # Add index for lookup by name
 scripts/
 ├── build-config.ts         # Master build script
 ├── build-wrangler.ts       # Generates wrangler.jsonc
@@ -371,6 +421,8 @@ src/
 │   ├── admin/api/
 │   │   ├── delete/[imageId]/
 │   │   │   └── +server.ts  # Delete endpoint with Cloudflare Access auth
+│   │   ├── images/by-name/[photoName]/
+│   │   │   └── +server.ts  # Lookup endpoint for finding image ID by name
 │   │   └── upload/
 │   │       └── +server.ts  # Upload endpoint with Cloudflare Access auth
 │   ├── api/images/
@@ -392,6 +444,7 @@ wrangler.jsonc              # Auto-generated Cloudflare Workers config
 - **KV Configuration** (`src/lib/config.ts`): Fetches global and user config from Cloudflare KV
 - **D1 Database**: Stores image metadata with username-indexed queries
 - **Upload Endpoint** (`src/routes/admin/api/upload/+server.ts`): Handles authenticated photo uploads
+- **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`): Finds image ID by photo name (for automation)
 - **Delete Endpoint** (`src/routes/admin/api/delete/[imageId]/+server.ts`): Handles authenticated photo deletion
 - **Images API** (`src/routes/api/images/+server.ts`): Returns paginated images from D1
 - **Dynamic Favicons** (`src/hooks.server.ts`): User-specific favicon redirects using KV config
