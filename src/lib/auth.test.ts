@@ -48,7 +48,6 @@ describe('auth', () => {
       it('extracts client ID from JWT common_name', () => {
         const payload = {
           common_name: 'jwt-client-id.access',
-          sub: '', // Empty string indicates service token
           iss: 'https://team.cloudflareaccess.com',
           exp: Math.floor(Date.now() / 1000) + 3600
         };
@@ -66,7 +65,6 @@ describe('auth', () => {
 
       it('throws error when service token JWT missing common_name', () => {
         const payload = {
-          sub: '',
           iss: 'https://team.cloudflareaccess.com',
           exp: Math.floor(Date.now() / 1000) + 3600
         };
@@ -81,49 +79,10 @@ describe('auth', () => {
       });
     });
 
-    describe('IdP user authentication', () => {
-      it('extracts email from JWT for IdP users', () => {
-        const payload = {
-          email: 'user@example.com',
-          sub: 'user-uuid-123',
-          iss: 'https://team.cloudflareaccess.com',
-          exp: Math.floor(Date.now() / 1000) + 3600
-        };
-        const jwt = `header.${btoa(JSON.stringify(payload))}.signature`;
-        const request = new Request('https://example.com/admin/api/upload', {
-          headers: { 'Cf-Access-Jwt-Assertion': jwt }
-        });
-        const result = extractAndValidateIdentity(request, 'https://team.cloudflareaccess.com');
-
-        expect(result).toEqual({
-          type: 'idp_user',
-          clientId: 'user@example.com',
-          email: 'user@example.com'
-        });
-      });
-
-      it('throws error when IdP token missing email', () => {
-        const payload = {
-          sub: 'user-uuid-123',
-          iss: 'https://team.cloudflareaccess.com',
-          exp: Math.floor(Date.now() / 1000) + 3600
-        };
-        const jwt = `header.${btoa(JSON.stringify(payload))}.signature`;
-        const request = new Request('https://example.com/admin/api/upload', {
-          headers: { 'Cf-Access-Jwt-Assertion': jwt }
-        });
-
-        expect(() =>
-          extractAndValidateIdentity(request, 'https://team.cloudflareaccess.com')
-        ).toThrow('IdP token missing email');
-      });
-    });
-
     describe('JWT validation', () => {
       it('rejects expired JWT', () => {
         const payload = {
           common_name: 'test-client-id.access',
-          sub: '',
           iss: 'https://team.cloudflareaccess.com',
           exp: Math.floor(Date.now() / 1000) - 3600 // Expired 1 hour ago
         };
@@ -140,7 +99,6 @@ describe('auth', () => {
       it('rejects JWT with wrong issuer', () => {
         const payload = {
           common_name: 'test-client-id.access',
-          sub: '',
           iss: 'https://wrong-team.cloudflareaccess.com',
           exp: Math.floor(Date.now() / 1000) + 3600
         };

@@ -1,15 +1,12 @@
 import type { UserKVConfig } from './config';
 
 export interface AuthenticatedIdentity {
-  type: 'service_token' | 'idp_user';
-  clientId: string; // Service token ID or user email
-  email?: string; // Only for IdP users
+  type: 'service_token';
+  clientId: string; // Service token ID
 }
 
 interface AccessJWTPayload {
   common_name?: string; // Service token client ID
-  email?: string; // IdP user email
-  sub?: string; // User UUID (empty string for service tokens)
   iss?: string; // Issuer (Access team domain)
   exp?: number; // Expiration timestamp (Unix seconds)
   aud?: string[]; // Audience
@@ -45,7 +42,7 @@ export function extractAndValidateIdentity(
     };
   }
 
-  // Check for JWT assertion (service token or IdP)
+  // Check for JWT assertion (service token)
   const jwtAssertion = request.headers.get('Cf-Access-Jwt-Assertion');
   if (!jwtAssertion) {
     throw new Error('Missing Access authentication headers');
@@ -69,31 +66,15 @@ export function extractAndValidateIdentity(
     throw new Error(`Invalid issuer: expected ${expectedIssuer}, got ${payload.iss}`);
   }
 
-  // Determine authentication type
-  const isServiceToken = payload.sub === '';
-
-  if (isServiceToken) {
-    // Service Token
-    if (!payload.common_name) {
-      throw new Error('Service token missing common_name');
-    }
-
-    return {
-      type: 'service_token',
-      clientId: payload.common_name
-    };
-  } else {
-    // IdP User
-    if (!payload.email) {
-      throw new Error('IdP token missing email');
-    }
-
-    return {
-      type: 'idp_user',
-      clientId: payload.email, // Use email as client ID for authorization
-      email: payload.email
-    };
+  // Extract service token client ID
+  if (!payload.common_name) {
+    throw new Error('Service token missing common_name');
   }
+
+  return {
+    type: 'service_token',
+    clientId: payload.common_name
+  };
 }
 
 /**
