@@ -48,7 +48,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vite": "^7.1.10",
+    "vite": "^7.1.11",
     "vitest": "^3.2.4",
     "vitest-browser-svelte": "^1.1.0",
     "wrangler": "^4.43.0"
