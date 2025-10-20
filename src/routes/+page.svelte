@@ -74,7 +74,11 @@
         <p class="mb-2 leading-tight">{image.caption}</p>
       {/if}
       <p class="text-sm text-gray-400">
-        Posted {new Date(image.uploaded).toLocaleString()}
+        {new Date(image.captured).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        })}
       </p>
     </div>
   </div>
