@@ -438,7 +438,7 @@ Both commands MUST pass or CI will fail.
 
 - **Adding features**: Follow existing patterns in `src/routes/` and `src/lib/`
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
-- **Database changes**: Create new migration in `migrations/`, apply with `wrangler d1 migrations apply`
+- **Database changes**: Create new migration in `migrations/`, apply with `pnpm wrangler d1 migrations apply`
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
 - **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with domain and authorized client IDs, then run `pnpm deploy`
 - **Adding admin endpoints**: Place under `/admin/*` path to use centralized authentication, access user info via `locals.adminAuth`, use shared utilities from `src/lib/admin-utils.ts` for validation and error handling

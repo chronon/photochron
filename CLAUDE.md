@@ -29,6 +29,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Use `pnpm check` and `pnpm lint` before committing changes
 
+### Documentation
+
+When asked to "update docs", update all of the following files:
+
+- `README.md` - User-facing documentation
+- `CLAUDE.md` - This file, guidance for Claude Code
+- `.github/copilot-instructions.md` - Instructions for GitHub Copilot
+
 ## Architecture
 
 This is a multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos using Cloudflare KV for configuration and Cloudflare D1 for image metadata storage.
