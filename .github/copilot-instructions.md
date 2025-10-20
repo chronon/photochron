@@ -224,14 +224,14 @@ Authenticated endpoints for managing photos. All admin endpoints use shared util
   - Pattern: All admin endpoints use discriminated unions for validation results
 
 - **Upload** (`POST /admin/api/images`):
-  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Validates via Cloudflare Access (service tokens)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Uploads photo to Cloudflare Images
   - Inserts metadata to D1
   - Returns `{ success: true, id: string, filename: string, uploaded: string }`
 
 - **Lookup** (`GET /admin/api/images/by-name/[photoName]`):
-  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Validates via Cloudflare Access (service tokens)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Searches for photo by name (case-insensitive)
   - Returns most recent photo if multiple matches exist
@@ -239,7 +239,7 @@ Authenticated endpoints for managing photos. All admin endpoints use shared util
   - Use case: Enables automation tools (like Apple Shortcuts) to find image ID by photo name
 
 - **Delete** (`DELETE /admin/api/images/[imageId]`):
-  - Validates via Cloudflare Access (service tokens or IdP users)
+  - Validates via Cloudflare Access (service tokens)
   - Authorizes client ID against user's `authorized_client_ids` in KV
   - Verifies ownership (prevents cross-user deletion)
   - Deletes metadata from D1
@@ -277,7 +277,7 @@ All `/admin/*` routes use centralized authentication via SvelteKit hooks:
 7. Sets `event.locals.adminAuth` with authenticated context
 8. Request proceeds to handler with authenticated user info
 
-### Supported Authentication Types
+### Supported Authentication Type
 
 **Service Tokens** (Machine-to-machine):
 
@@ -289,17 +289,6 @@ Headers:
 
 - Used for automated uploads from scripts/applications
 - Client ID validated against `authorized_client_ids` in KV
-
-**IdP Users** (Browser-based):
-
-```
-Headers:
-  CF-Access-Jwt-Assertion: eyJhbGc...
-```
-
-- Authenticated via identity providers (Google, GitHub, etc.)
-- Email address extracted from JWT
-- Email can be added to `authorized_client_ids` for authorization
 
 ### Local Development Bypass
 
@@ -339,9 +328,8 @@ export const POST: RequestHandler = async ({ locals }) => {
   }
 
   const { username, identity } = locals.adminAuth;
-  // identity.type: 'service_token' | 'idp_user'
+  // identity.type: 'service_token'
   // identity.clientId: string
-  // identity.email?: string (for IdP users)
 
   // Your handler logic here...
 };
@@ -376,7 +364,6 @@ const event = {
 3. **Test with real service tokens** - Use `pnpm preview` for realistic testing
 4. **Never commit secrets** - Keep `.dev.vars` gitignored
 5. **Update authorized_client_ids** - Add client IDs to KV config for authorization
-6. **Use appropriate auth type** - Service tokens for automation, IdP for browsers
 
 ### Domain-Based Routing
 

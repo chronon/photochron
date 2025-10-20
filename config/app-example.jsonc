@@ -1,0 +1,66 @@
+{
+  "global": {
+    // Cloudflare Images delivery URL (find in Images dashboard)
+    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
+    // Default variant for image delivery
+    "imageVariant": "default",
+    // Username to use for localhost development
+    "devUser": "yourname"
+  },
+  "wrangler": {
+    // Cloudflare Worker name
+    "name": "photochron",
+    // Workers compatibility date
+    "compatibility_date": "2024-10-04",
+    "vars": {
+      // Cloudflare account ID (find in dashboard URL or Overview page)
+      "CF_ACCOUNT_ID": "your-cloudflare-account-id",
+      // Cloudflare Access team domain (e.g., https://yourteam.cloudflareaccess.com)
+      "CF_ACCESS_TEAM_DOMAIN": "https://yourteam.cloudflareaccess.com"
+    },
+    "kv_namespaces": [
+      {
+        "binding": "PCHRON_KV",
+        // Create with: wrangler kv namespace create PCHRON_KV
+        "id": "your-kv-namespace-id"
+      }
+    ],
+    "d1_databases": [
+      {
+        "binding": "PCHRON_DB",
+        "database_name": "photochron",
+        // Create with: wrangler d1 create photochron
+        "database_id": "your-d1-database-id"
+      }
+    ]
+  },
+  "users": {
+    // Username (used in URL path extraction)
+    "alice": {
+      // Domain for this user's gallery
+      "domain": "alice.example.com",
+      "profile": {
+        // Display name
+        "name": "alice"
+      },
+      "avatar": {
+        // Cloudflare Images ID for user avatar
+        "id": "00000000-0000-0000-0000-000000000000",
+        "variant": "default"
+      },
+      // Service token client IDs allowed to upload/delete for this user
+      "authorized_client_ids": ["your-service-token-client-id.access"]
+    },
+    "bob": {
+      "domain": "bob.example.com",
+      "profile": {
+        "name": "bob"
+      },
+      "avatar": {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "variant": "default"
+      },
+      "authorized_client_ids": ["another-service-token-client-id.access"]
+    }
+  }
+}

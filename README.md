@@ -270,7 +270,7 @@ All `/admin/*` routes are protected by a centralized authentication system that 
 **Flow:**
 
 1. Request hits `/admin/*` route
-2. Cloudflare Access validates credentials at edge (service token or IdP authentication)
+2. Cloudflare Access validates credentials at edge (service token authentication)
 3. `handleAdminAuth` hook intercepts request
 4. Extracts identity from Cloudflare Access headers
 5. Validates JWT claims (expiration, issuer)
@@ -327,19 +327,13 @@ Add the Client ID to user's authorized list in `config/app.jsonc`:
 pnpm deploy
 ```
 
-### Supported Authentication Types
+### Supported Authentication Type
 
 **Service Tokens** (Machine-to-machine):
 
 - Used for automated uploads from scripts/applications
 - Client ID and secret passed via headers
 - Validated against `authorized_client_ids` in KV
-
-**IdP Users** (Browser-based):
-
-- Users authenticated via identity providers (Google, GitHub, etc.)
-- Email address extracted from JWT
-- Can be added to `authorized_client_ids` for authorization
 
 ### Local Development
 
@@ -503,7 +497,7 @@ The application deploys as a single Cloudflare Worker with:
 - **Cloudflare KV**: Stores all configuration (global, user, authorized client IDs)
 - **Cloudflare D1**: Stores image metadata with indexed queries
 - **Cloudflare Images**: Stores and delivers photo files
-- **Cloudflare Access**: Authenticates all `/admin/*` requests with service tokens or IdP users
+- **Cloudflare Access**: Authenticates all `/admin/*` requests with service tokens
 - **Environment variables**: `CF_ACCESS_TEAM_DOMAIN`, `CF_IMAGES_TOKEN` (via wrangler vars)
 - **Development secrets**: `DEV_USER`, `DEV_CLIENT_ID` (via .dev.vars, not deployed)
 - **Auto-generated routes**: Based on `config/app.jsonc`, one route per user domain

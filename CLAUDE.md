@@ -100,10 +100,9 @@ The app uses a centralized authentication system for all `/admin/*` routes:
 5. Checks client ID against user's `authorized_client_ids` in KV
 6. Sets authenticated context in `event.locals.adminAuth` for downstream handlers
 
-**Supported Authentication Types:**
+**Supported Authentication Type:**
 
 - **Service Tokens** - For automated clients (client ID from `common_name` JWT claim or header)
-- **IdP Users** - For browser-based access (client ID from `email` JWT claim)
 
 **Local Development:**
 
