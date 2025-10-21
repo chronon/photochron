@@ -1,7 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error } from '@sveltejs/kit';
-import { getConfigFromKV, extractUserFromDomain } from '$lib/config';
+import { getConfigFromKV, getUsernameFromDomain } from '$lib/config';
 import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
 
 // Admin authentication handle
@@ -24,8 +24,19 @@ const handleAdminAuth: Handle = async ({ event, resolve }) => {
     throw error(500, 'Configuration error');
   }
 
-  // Extract username from domain
-  const username = extractUserFromDomain(event.url.hostname, DEV_USER);
+  // Determine username from domain
+  let username: string;
+  try {
+    username = await getUsernameFromDomain(PCHRON_KV, event.url.hostname, DEV_USER);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[Admin Auth] ${errorMessage}`);
+    // Map domain lookup errors to appropriate HTTP status codes
+    if (errorMessage.includes('DEV_USER')) {
+      throw error(500, 'Configuration error');
+    }
+    throw error(404, 'Domain not configured');
+  }
 
   // Extract and validate identity
   let identity;

@@ -7,9 +7,8 @@
 ### Key Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
-- **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
-- **Subdomain support** - `admin.example.com` also shows example's photos
-- **KV-based configuration** - All user config (CDN, avatars, authorized client IDs) stored in Cloudflare KV
+- **Domain-based routing** - Explicit domain-to-username mappings in KV (supports multiple domains per user and arbitrary mappings)
+- **KV-based configuration** - All config (global settings, domain mappings, user config) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
 - **Authenticated deletion** - Delete photos via API endpoint with ownership verification
@@ -92,7 +91,7 @@ pnpm deploy:preview         # Dry run deployment
   },
   "users": {
     "username": {
-      "domain": "example.com",
+      "domains": ["example.com", "example.net"],
       "avatar": { "id": "image-id", "variant": "default" },
       "authorized_client_ids": ["cloudflare-access-service-token-client-id"]
     }
@@ -154,7 +153,7 @@ src/
 ├── lib/
 │   ├── admin-utils.ts         # Shared validation and error handling utilities for admin endpoints
 │   ├── auth.ts                # Authentication and authorization logic
-│   ├── config.ts              # Domain parsing, KV config fetching, TypeScript interfaces
+│   ├── config.ts              # Domain-to-username lookup, KV config fetching, TypeScript interfaces
 │   └── InfiniteScroll.svelte # Reusable infinite scroll component
 ├── routes/
 │   ├── admin/api/
@@ -165,12 +164,12 @@ src/
 │   │       └── by-name/[photoName]/
 │   │           └── +server.ts    # Authenticated lookup endpoint (GET, finds image ID by photo name)
 │   ├── api/images/
-│   │   └── +server.ts        # Paginated image data API (D1 queries)
-│   ├── +layout.server.ts     # Domain-to-user detection, KV config loading, D1 image fetching
+│   │   └── +server.ts        # Paginated image data API with domain lookup (D1 queries)
+│   ├── +layout.server.ts     # Domain-to-username lookup via KV, user config loading, D1 image fetching
 │   ├── +layout.svelte        # Site header with user info
 │   ├── +page.server.ts       # Image data passing with validation
 │   └── +page.svelte          # Main photo gallery with infinite scroll
-├── hooks.server.ts           # Admin authentication + dynamic favicon handling
+├── hooks.server.ts           # Admin authentication with domain lookup + dynamic favicon handling
 ├── app.html                  # HTML template with favicon links
 ├── app.d.ts                  # TypeScript ambient declarations (Cloudflare KV, D1, env vars)
 └── app.css                   # Global styles
@@ -192,7 +191,8 @@ src/
 **Configuration (from Cloudflare KV):**
 
 - **Global config** (`global` key): Image CDN settings
-- **User config** (`user:USERNAME` key): Domain, avatar, authorized client IDs per user
+- **Domain mapping** (`domain:HOSTNAME` key): Maps domain to username (e.g., `domain:example.com` → `"alice"`)
+- **User config** (`user:USERNAME` key): Domains array, avatar, authorized client IDs per user
 
 **Image Metadata (from Cloudflare D1):**
 
@@ -271,11 +271,12 @@ All `/admin/*` routes use centralized authentication via SvelteKit hooks:
 1. Request hits `/admin/*` route
 2. Cloudflare Access validates at edge (enforced on path)
 3. `handleAdminAuth` hook intercepts request in application
-4. Extracts identity from Cloudflare Access headers
-5. Validates JWT claims (expiration, issuer)
-6. Checks client ID against user's `authorized_client_ids` in KV
-7. Sets `event.locals.adminAuth` with authenticated context
-8. Request proceeds to handler with authenticated user info
+4. Determines username via domain lookup in KV (`domain:HOSTNAME` → username)
+5. Extracts identity from Cloudflare Access headers
+6. Validates JWT claims (expiration, issuer)
+7. Checks client ID against user's `authorized_client_ids` in KV
+8. Sets `event.locals.adminAuth` with username and identity
+9. Request proceeds to handler with authenticated user info
 
 ### Supported Authentication Type
 
@@ -367,9 +368,9 @@ const event = {
 
 ### Domain-Based Routing
 
-- **example.com** → username: `example` → D1: `SELECT * FROM images WHERE username = 'example'`
-- **photos.jane-doe.com** → username: `jane-doe` → D1: `SELECT * FROM images WHERE username = 'jane-doe'`
-- **admin.example.com/admin/api/images** → Authenticated upload → Cloudflare Images + D1 insert
+- **example.com** → KV: `domain:example.com` → username: `alice` → KV: `user:alice` → D1: `SELECT * FROM images WHERE username = 'alice'`
+- **photos.com** → KV: `domain:photos.com` → username: `alice` → (same user, different domain) → D1: `SELECT * FROM images WHERE username = 'alice'`
+- **example.com/admin/api/images** → Domain lookup → username: `alice` → Authenticated upload → Cloudflare Images + D1 insert
 
 ### Dynamic Favicon System
 
@@ -440,7 +441,7 @@ Both commands MUST pass or CI will fail.
 - **Styling changes**: Use Tailwind CSS classes, follow existing component patterns
 - **Database changes**: Create new migration in `migrations/`, apply with `pnpm wrangler d1 migrations apply`
 - **API changes**: Update TypeScript interfaces in `src/lib/config.ts`
-- **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with domain and authorized client IDs, then run `pnpm deploy`
+- **Adding users**: Create Cloudflare Access service token, edit `config/app.jsonc` with `domains` array (one or more domains) and authorized client IDs, then run `pnpm deploy`
 - **Adding admin endpoints**: Place under `/admin/*` path to use centralized authentication, access user info via `locals.adminAuth`, use shared utilities from `src/lib/admin-utils.ts` for validation and error handling
 - **Authentication changes**: Modify `src/lib/auth.ts` and ensure all tests in `src/lib/auth.test.ts` pass
 - **Authorization changes**: Update user's `authorized_client_ids` in `config/app.jsonc`, then run `pnpm deploy`

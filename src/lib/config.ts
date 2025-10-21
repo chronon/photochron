@@ -4,7 +4,7 @@ export interface GlobalKVConfig {
 }
 
 export interface UserKVConfig {
-  domain: string;
+  domains: string[];
   profile: {
     name: string;
   };
@@ -15,7 +15,15 @@ export interface UserKVConfig {
   authorized_client_ids: string[];
 }
 
-export function extractUserFromDomain(hostname: string, devUser?: string): string {
+/**
+ * Determines username from hostname via domain lookup in KV.
+ * Handles localhost bypass for development.
+ */
+export async function getUsernameFromDomain(
+  kv: KVNamespace,
+  hostname: string,
+  devUser?: string
+): Promise<string> {
   const hostWithoutPort = hostname.split(':')[0];
 
   if (hostWithoutPort.startsWith('localhost')) {
@@ -25,12 +33,12 @@ export function extractUserFromDomain(hostname: string, devUser?: string): strin
     return devUser;
   }
 
-  const parts = hostWithoutPort.split('.');
-  if (parts.length === 2) {
-    return parts[0];
+  const usernameFromKV = await kv.get(`domain:${hostWithoutPort}`);
+  if (!usernameFromKV) {
+    throw new Error(`Domain not configured: ${hostWithoutPort}`);
   }
 
-  throw new Error(`Cannot extract username from domain: ${hostname}`);
+  return usernameFromKV;
 }
 
 export async function getConfigFromKV(
@@ -44,9 +52,11 @@ export async function getConfigFromKV(
   }
 
   const global = JSON.parse(globalJson) as GlobalKVConfig;
-  const username = extractUserFromDomain(hostname, devUser);
-  const userJson = await kv.get(`user:${username}`);
 
+  // Determine username from domain
+  const username = await getUsernameFromDomain(kv, hostname, devUser);
+
+  const userJson = await kv.get(`user:${username}`);
   if (!userJson) {
     throw new Error(`User config not found for: ${username}`);
   }

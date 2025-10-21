@@ -37,8 +37,8 @@
   "users": {
     // Username (used in URL path extraction)
     "alice": {
-      // Domain for this user's gallery
-      "domain": "alice.example.com",
+      // Domains that will show this user's gallery (supports multiple domains per user)
+      "domains": ["alice.example.com"],
       "profile": {
         // Display name
         "name": "alice"
@@ -52,7 +52,7 @@
       "authorized_client_ids": ["your-service-token-client-id.access"]
     },
     "bob": {
-      "domain": "bob.example.com",
+      "domains": ["bob.example.com"],
       "profile": {
         "name": "bob"
       },
