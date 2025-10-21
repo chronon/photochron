@@ -1,7 +1,83 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getConfigFromKV } from './config';
+import { getConfigFromKV, getUsernameFromDomain } from './config';
 
 describe('config', () => {
+  describe('getUsernameFromDomain', () => {
+    it('looks up username from domain mapping in KV', async () => {
+      const mockKV = {
+        get: vi.fn((key: string) => {
+          if (key === 'domain:example.com') {
+            return Promise.resolve('alice');
+          }
+          return Promise.resolve(null);
+        })
+      } as unknown as KVNamespace;
+
+      const result = await getUsernameFromDomain(mockKV, 'example.com', 'dev-user');
+
+      expect(result).toBe('alice');
+      expect(mockKV.get).toHaveBeenCalledWith('domain:example.com');
+    });
+
+    it('strips port from hostname before lookup', async () => {
+      const mockKV = {
+        get: vi.fn((key: string) => {
+          if (key === 'domain:example.com') {
+            return Promise.resolve('alice');
+          }
+          return Promise.resolve(null);
+        })
+      } as unknown as KVNamespace;
+
+      const result = await getUsernameFromDomain(mockKV, 'example.com:8080', 'dev-user');
+
+      expect(result).toBe('alice');
+      expect(mockKV.get).toHaveBeenCalledWith('domain:example.com');
+    });
+
+    it('returns DEV_USER for localhost', async () => {
+      const mockKV = {
+        get: vi.fn()
+      } as unknown as KVNamespace;
+
+      const result = await getUsernameFromDomain(mockKV, 'localhost', 'dev-user');
+
+      expect(result).toBe('dev-user');
+      expect(mockKV.get).not.toHaveBeenCalled();
+    });
+
+    it('returns DEV_USER for localhost with port', async () => {
+      const mockKV = {
+        get: vi.fn()
+      } as unknown as KVNamespace;
+
+      const result = await getUsernameFromDomain(mockKV, 'localhost:3000', 'dev-user');
+
+      expect(result).toBe('dev-user');
+      expect(mockKV.get).not.toHaveBeenCalled();
+    });
+
+    it('throws error when DEV_USER is missing for localhost', async () => {
+      const mockKV = {
+        get: vi.fn()
+      } as unknown as KVNamespace;
+
+      await expect(getUsernameFromDomain(mockKV, 'localhost', undefined)).rejects.toThrow(
+        'DEV_USER environment variable must be set for localhost development'
+      );
+    });
+
+    it('throws error when domain is not configured in KV', async () => {
+      const mockKV = {
+        get: vi.fn(() => Promise.resolve(null))
+      } as unknown as KVNamespace;
+
+      await expect(getUsernameFromDomain(mockKV, 'unknown.com', 'dev-user')).rejects.toThrow(
+        'Domain not configured: unknown.com'
+      );
+    });
+  });
+
   describe('getConfigFromKV', () => {
     it('fetches and parses global and user config from KV using domain lookup', async () => {
       const mockKV = {

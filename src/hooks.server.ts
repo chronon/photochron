@@ -1,7 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error } from '@sveltejs/kit';
-import { getConfigFromKV } from '$lib/config';
+import { getConfigFromKV, getUsernameFromDomain } from '$lib/config';
 import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
 
 // Admin authentication handle
@@ -25,24 +25,17 @@ const handleAdminAuth: Handle = async ({ event, resolve }) => {
   }
 
   // Determine username from domain
-  const hostWithoutPort = event.url.hostname.split(':')[0];
   let username: string;
-
-  if (hostWithoutPort.startsWith('localhost')) {
-    // Localhost bypass for development
-    if (!DEV_USER) {
-      console.error('[Admin Auth] DEV_USER not configured for localhost');
+  try {
+    username = await getUsernameFromDomain(PCHRON_KV, event.url.hostname, DEV_USER);
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`[Admin Auth] ${errorMessage}`);
+    // Map domain lookup errors to appropriate HTTP status codes
+    if (errorMessage.includes('DEV_USER')) {
       throw error(500, 'Configuration error');
     }
-    username = DEV_USER;
-  } else {
-    // Look up username from domain mapping in KV
-    const usernameFromKV = await PCHRON_KV.get(`domain:${hostWithoutPort}`);
-    if (!usernameFromKV) {
-      console.error(`[Admin Auth] Domain not configured: ${hostWithoutPort}`);
-      throw error(404, 'Domain not configured');
-    }
-    username = usernameFromKV;
+    throw error(404, 'Domain not configured');
   }
 
   // Extract and validate identity

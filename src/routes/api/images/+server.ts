@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getUsernameFromDomain } from '$lib/config';
 
 const PAGE_SIZE = 15;
 
@@ -15,22 +16,21 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   const offset = parseInt(url.searchParams.get('offset') || '0');
 
   // Determine username from domain
-  const hostWithoutPort = url.hostname.split(':')[0];
   let username: string;
-
-  if (hostWithoutPort.startsWith('localhost')) {
-    // Localhost bypass for development
-    if (!platform.env.DEV_USER) {
-      return json({ error: 'DEV_USER not configured' }, { status: 500 });
+  try {
+    username = await getUsernameFromDomain(
+      platform.env.PCHRON_KV,
+      url.hostname,
+      platform.env.DEV_USER
+    );
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Failed to determine username:', errorMessage);
+    // Map domain lookup errors to appropriate HTTP status codes
+    if (errorMessage.includes('DEV_USER')) {
+      return json({ error: 'Configuration error' }, { status: 500 });
     }
-    username = platform.env.DEV_USER;
-  } else {
-    // Look up username from domain mapping in KV
-    const usernameFromKV = await platform.env.PCHRON_KV.get(`domain:${hostWithoutPort}`);
-    if (!usernameFromKV) {
-      return json({ error: 'Domain not configured' }, { status: 404 });
-    }
-    username = usernameFromKV;
+    return json({ error: 'Domain not configured' }, { status: 404 });
   }
 
   try {
