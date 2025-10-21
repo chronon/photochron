@@ -15,10 +15,13 @@ describe('hooks.server', () => {
               })
             );
           }
+          if (key === 'domain:johndoe.com') {
+            return Promise.resolve('johndoe');
+          }
           if (key === 'user:johndoe') {
             return Promise.resolve(
               JSON.stringify({
-                domain: 'johndoe.com',
+                domains: ['johndoe.com'],
                 profile: { name: 'John Doe' },
                 avatar: { id: 'avatar-123', variant: 'profile' },
                 authorized_client_ids: []
@@ -58,10 +61,13 @@ describe('hooks.server', () => {
               })
             );
           }
+          if (key === 'domain:johndoe.com') {
+            return Promise.resolve('johndoe');
+          }
           if (key === 'user:johndoe') {
             return Promise.resolve(
               JSON.stringify({
-                domain: 'johndoe.com',
+                domains: ['johndoe.com'],
                 profile: { name: 'John Doe' },
                 avatar: { id: 'avatar-123', variant: 'profile' },
                 authorized_client_ids: []
@@ -99,10 +105,13 @@ describe('hooks.server', () => {
               })
             );
           }
+          if (key === 'domain:johndoe.com') {
+            return Promise.resolve('johndoe');
+          }
           if (key === 'user:johndoe') {
             return Promise.resolve(
               JSON.stringify({
-                domain: 'johndoe.com',
+                domains: ['johndoe.com'],
                 profile: { name: 'John Doe' },
                 avatar: { id: 'avatar-123', variant: 'profile' },
                 authorized_client_ids: []
@@ -140,10 +149,13 @@ describe('hooks.server', () => {
               })
             );
           }
+          if (key === 'domain:johndoe.com') {
+            return Promise.resolve('johndoe');
+          }
           if (key === 'user:johndoe') {
             return Promise.resolve(
               JSON.stringify({
-                domain: 'johndoe.com',
+                domains: ['johndoe.com'],
                 profile: { name: 'John Doe' },
                 avatar: { id: 'avatar-123', variant: 'profile' },
                 authorized_client_ids: []

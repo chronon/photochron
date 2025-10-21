@@ -1,7 +1,7 @@
 import type { Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { error } from '@sveltejs/kit';
-import { getConfigFromKV, extractUserFromDomain } from '$lib/config';
+import { getConfigFromKV } from '$lib/config';
 import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
 
 // Admin authentication handle
@@ -24,8 +24,26 @@ const handleAdminAuth: Handle = async ({ event, resolve }) => {
     throw error(500, 'Configuration error');
   }
 
-  // Extract username from domain
-  const username = extractUserFromDomain(event.url.hostname, DEV_USER);
+  // Determine username from domain
+  const hostWithoutPort = event.url.hostname.split(':')[0];
+  let username: string;
+
+  if (hostWithoutPort.startsWith('localhost')) {
+    // Localhost bypass for development
+    if (!DEV_USER) {
+      console.error('[Admin Auth] DEV_USER not configured for localhost');
+      throw error(500, 'Configuration error');
+    }
+    username = DEV_USER;
+  } else {
+    // Look up username from domain mapping in KV
+    const usernameFromKV = await PCHRON_KV.get(`domain:${hostWithoutPort}`);
+    if (!usernameFromKV) {
+      console.error(`[Admin Auth] Domain not configured: ${hostWithoutPort}`);
+      throw error(404, 'Domain not configured');
+    }
+    username = usernameFromKV;
+  }
 
   // Extract and validate identity
   let identity;

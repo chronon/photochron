@@ -16,6 +16,17 @@ interface ImagesResponse {
   error?: string;
 }
 
+function createMockKV(domain: string, username: string): KVNamespace {
+  return {
+    get: vi.fn((key: string) => {
+      if (key === `domain:${domain}`) {
+        return Promise.resolve(username);
+      }
+      return Promise.resolve(null);
+    })
+  } as unknown as KVNamespace;
+}
+
 describe('api/images/+server', () => {
   describe('GET', () => {
     it('returns images for user with hasMore=false when less than 16 results', async () => {
@@ -50,6 +61,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=0'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
             PCHRON_DB: mockD1
           }
         }
@@ -89,6 +101,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=0'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
             PCHRON_DB: mockD1
           }
         }
@@ -137,6 +150,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images?offset=10'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
             PCHRON_DB: mockD1,
             DEV_USER: 'johndoe'
           }
@@ -167,6 +181,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
             PCHRON_DB: mockD1,
             DEV_USER: 'johndoe'
           }
@@ -197,6 +212,7 @@ describe('api/images/+server', () => {
         url: new URL('https://alice.com/api/images'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('alice.com', 'alice'),
             PCHRON_DB: mockD1
           }
         }
@@ -235,6 +251,7 @@ describe('api/images/+server', () => {
         url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
+            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
             PCHRON_DB: mockD1
           }
         }

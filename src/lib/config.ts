@@ -4,7 +4,7 @@ export interface GlobalKVConfig {
 }
 
 export interface UserKVConfig {
-  domain: string;
+  domains: string[];
   profile: {
     name: string;
   };
@@ -13,24 +13,6 @@ export interface UserKVConfig {
     variant: string;
   };
   authorized_client_ids: string[];
-}
-
-export function extractUserFromDomain(hostname: string, devUser?: string): string {
-  const hostWithoutPort = hostname.split(':')[0];
-
-  if (hostWithoutPort.startsWith('localhost')) {
-    if (!devUser) {
-      throw new Error('DEV_USER environment variable must be set for localhost development');
-    }
-    return devUser;
-  }
-
-  const parts = hostWithoutPort.split('.');
-  if (parts.length === 2) {
-    return parts[0];
-  }
-
-  throw new Error(`Cannot extract username from domain: ${hostname}`);
 }
 
 export async function getConfigFromKV(
@@ -44,9 +26,27 @@ export async function getConfigFromKV(
   }
 
   const global = JSON.parse(globalJson) as GlobalKVConfig;
-  const username = extractUserFromDomain(hostname, devUser);
-  const userJson = await kv.get(`user:${username}`);
 
+  // Extract hostname without port for lookup
+  const hostWithoutPort = hostname.split(':')[0];
+
+  // Localhost bypass for development
+  let username: string;
+  if (hostWithoutPort.startsWith('localhost')) {
+    if (!devUser) {
+      throw new Error('DEV_USER environment variable must be set for localhost development');
+    }
+    username = devUser;
+  } else {
+    // Look up username from domain mapping in KV
+    const usernameFromKV = await kv.get(`domain:${hostWithoutPort}`);
+    if (!usernameFromKV) {
+      throw new Error(`Domain not configured: ${hostWithoutPort}`);
+    }
+    username = usernameFromKV;
+  }
+
+  const userJson = await kv.get(`user:${username}`);
   if (!userJson) {
     throw new Error(`User config not found for: ${username}`);
   }
