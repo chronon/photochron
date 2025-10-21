@@ -5,7 +5,7 @@ import { getConfigFromKV, getUsernameFromDomain } from '$lib/config';
 import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
 
 // Admin authentication handle
-const handleAdminAuth: Handle = async ({ event, resolve }) => {
+export const handleAdminAuth: Handle = async ({ event, resolve }) => {
   // Only apply to /admin/* routes
   if (!event.url.pathname.startsWith('/admin')) {
     return resolve(event);
