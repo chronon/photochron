@@ -10,19 +10,32 @@
   const dispatch = createEventDispatcher();
 
   let scrollElement: HTMLDivElement | null = $state(null);
+  let observer: IntersectionObserver | null = null;
+
+  const handleEntries = (entries: IntersectionObserverEntry[]) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && hasMore) {
+        dispatch('loadMore');
+      }
+    });
+  };
+
+  const teardownObserver = () => {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  };
 
   onMount(() => {
-    let observer = new IntersectionObserver(observerCallback);
-    observer.observe(scrollElement!);
-
-    function observerCallback(entries: IntersectionObserverEntry[]) {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && hasMore) {
-          dispatch('loadMore');
-        }
-      });
+    if (!scrollElement) {
+      return () => {};
     }
-    return () => observer.unobserve(scrollElement!);
+
+    observer = new IntersectionObserver(handleEntries);
+    observer.observe(scrollElement);
+
+    return teardownObserver;
   });
 </script>
 
