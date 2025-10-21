@@ -5,8 +5,8 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 ## Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
-- **Domain-based routing** - `example.com` shows example's photos, `jane.com` shows jane's photos
-- **KV-based configuration** - All user config (CDN, avatars) stored in Cloudflare KV
+- **Domain-based routing** - Explicit domain-to-username mappings in KV (supports multiple domains per user and arbitrary mappings)
+- **KV-based configuration** - All config (global settings, domain mappings, user config) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/images`
 - **Photo deletion** - Delete photos via authenticated API endpoint at `domain.com/admin/api/images/{imageId}`
@@ -17,11 +17,11 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 
 ## How It Works
 
-The application extracts the username from the domain name, loads configuration from Cloudflare KV, and fetches images from D1:
+The application looks up the username from the domain via KV, loads user configuration, and fetches images from D1:
 
-1. **Domain** → **Username** → **KV Config** → **D1 Images**
-2. **example.com** → `example` → KV: `user:example` → D1: `SELECT * FROM images WHERE username = 'example'`
-3. **jane.com/admin/api/images** → Authenticated upload → Cloudflare Images + D1 insert
+1. **Domain** → **KV Lookup** → **Username** → **User Config** → **D1 Images**
+2. **example.com** → KV: `domain:example.com` → `"alice"` → KV: `user:alice` → D1: `SELECT * FROM images WHERE username = 'alice'`
+3. **domain.com/admin/api/images** → Domain lookup → Authenticated upload → Cloudflare Images + D1 insert
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ cp .dev.vars.example .dev.vars
 Edit `config/app.jsonc` with your settings:
 
 - Update Cloudflare resource IDs (KV namespace, D1 database, Images delivery URL)
-- Add your users with their domains, avatars, and authorized client IDs
+- Add your users with their domains array (one or more domains per user), avatars, and authorized client IDs
 
 Edit `.dev.vars` with your local development secrets
 
@@ -81,7 +81,8 @@ pnpm run deploy
 Configuration is stored in Cloudflare KV with these keys:
 
 - **`global`**: Global config (image CDN settings)
-- **`user:USERNAME`**: Per-user config (domain, avatar, authorized client IDs)
+- **`domain:HOSTNAME`**: Domain-to-username mapping (e.g., `domain:example.com` → `"alice"`)
+- **`user:USERNAME`**: Per-user config (domains array, avatar, authorized client IDs)
 
 These are automatically generated from `config/app.jsonc` during deployment via build scripts.
 
@@ -164,8 +165,8 @@ The application uses Cloudflare KV (configuration), D1 (image metadata), Images 
 
 **Request Flow:**
 
-- Extract username from domain → Fetch config from KV → Query D1 for images
-- Admin routes validate via Cloudflare Access at edge → Check authorization in KV → Process operation
+- Look up username from domain in KV (`domain:*`) → Fetch user config from KV (`user:*`) → Query D1 for images
+- Admin routes determine username from domain → Validate via Cloudflare Access at edge → Check authorization in KV → Process operation
 
 ## User Management
 
@@ -173,8 +174,8 @@ The application uses Cloudflare KV (configuration), D1 (image metadata), Images 
 
 1. **Set up Cloudflare Access** (one-time): Configure Access application for `/admin` path if not already done
 2. **Create Service Token**: Generate Cloudflare Access service token for upload authentication
-3. **Edit `config/app.jsonc`**: Add user entry with domain, avatar, and authorized client IDs (include service token client ID)
-4. **Deploy**: Run `pnpm run deploy` to generate config, upload to KV, and deploy
+3. **Edit `config/app.jsonc`**: Add user entry with `domains` array (one or more domains), avatar, and authorized client IDs (include service token client ID)
+4. **Deploy**: Run `pnpm run deploy` to generate config (including domain mappings), upload to KV, and deploy
 5. **Create favicon variants** (optional): Add `favicon16` (16x16), `favicon32` (32x32), `apple180` (180x180) variants for the user's avatar in Cloudflare Images. Falls back to static files if not present.
 6. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
 

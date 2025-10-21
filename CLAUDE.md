@@ -44,8 +44,8 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 ### Key Features
 
 - **Multi-user support** - One deployment serves unlimited domains/users
-- **Domain-based routing** - Extracts username from domain (example.com → example user)
-- **KV-based configuration** - Global and user config stored in Cloudflare KV
+- **Domain-based routing** - Explicit domain-to-username mappings stored in KV (supports arbitrary mappings and multiple domains per user)
+- **KV-based configuration** - Global config, domain mappings, and user config stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
 - **Authenticated uploads** - Upload photos via API endpoint with Cloudflare Access authentication
 - **Authenticated deletion** - Delete photos via API endpoint with ownership verification
@@ -55,24 +55,25 @@ This is a multi-user, domain-based photo gallery application built with SvelteKi
 
 ### Key Components
 
-- **Layout Server Load** (`src/routes/+layout.server.ts`) - Extracts username from domain, loads config from KV, fetches images from D1
+- **Layout Server Load** (`src/routes/+layout.server.ts`) - Looks up username from domain mapping in KV, loads user config from KV, fetches images from D1
 - **Page Server Load** (`src/routes/+page.server.ts`) - Passes images data from parent layout
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
 - **Upload Endpoint** (`src/routes/admin/api/images/+server.ts`) - Handles authenticated photo uploads, validates via Cloudflare Access, uploads to Cloudflare Images, inserts to D1
 - **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`) - Finds image ID by photo name with case-insensitive matching, returns most recent if duplicates exist
 - **Delete Endpoint** (`src/routes/admin/api/images/[imageId]/+server.ts`) - Handles authenticated photo deletion, verifies ownership, deletes from D1 and Cloudflare Images
-- **Images API** (`src/routes/api/images/+server.ts`) - Returns paginated images from D1 for infinite scroll
+- **Images API** (`src/routes/api/images/+server.ts`) - Determines username via domain lookup, returns paginated images from D1 for infinite scroll
 - **InfiniteScroll Component** (`src/lib/InfiniteScroll.svelte`) - Reusable component using IntersectionObserver API
-- **Config Module** (`src/lib/config.ts`) - Domain parsing, KV config fetching, and TypeScript interfaces
+- **Config Module** (`src/lib/config.ts`) - Domain-to-username lookup, KV config fetching, and TypeScript interfaces
 - **Admin Utils Module** (`src/lib/admin-utils.ts`) - Shared validation and error handling utilities for admin endpoints
-- **Hooks Server** (`src/hooks.server.ts`) - Intercepts favicon requests and redirects using KV config
+- **Hooks Server** (`src/hooks.server.ts`) - Handles admin authentication with domain lookup, intercepts favicon requests and redirects using KV config
 
 ### Configuration System
 
-- **Cloudflare KV Storage** - Stores global and per-user configuration at deployment time
+- **Cloudflare KV Storage** - Stores global config, domain mappings, and per-user configuration at deployment time
 - **KV Keys**:
   - `global` - Image CDN settings
-  - `user:USERNAME` - Domain, avatar, authorized client IDs per user
+  - `domain:HOSTNAME` - Maps domain to username (e.g., `domain:example.com` → `"alice"`)
+  - `user:USERNAME` - User config with domains array, avatar, authorized client IDs per user
 - **Environment secrets** - `CF_IMAGES_TOKEN` (Cloudflare Images API token), `CF_ACCESS_TEAM_DOMAIN` (Cloudflare Access team domain), `DEV_USER` (localhost development username), `DEV_CLIENT_ID` (local development auth bypass)
 - **Deploy-time configuration** - `config/app.jsonc` (JSONC format with comments support) → Build scripts → KV upload → deployment
 - **Build scripts** - Automated scripts transform `app.jsonc` into `wrangler.jsonc` and `app.kv.json`
@@ -103,10 +104,11 @@ The app uses a centralized authentication system for all `/admin/*` routes:
 
 1. Request hits `/admin/*` route
 2. `handleAdminAuth` hook in `src/hooks.server.ts` intercepts request
-3. Extracts identity from Cloudflare Access headers (`Cf-Access-Client-Id` or `Cf-Access-Jwt-Assertion`)
-4. Validates JWT claims (expiration, issuer) for defense-in-depth
-5. Checks client ID against user's `authorized_client_ids` in KV
-6. Sets authenticated context in `event.locals.adminAuth` for downstream handlers
+3. Determines username via domain lookup in KV (`domain:HOSTNAME` → username)
+4. Extracts identity from Cloudflare Access headers (`Cf-Access-Client-Id` or `Cf-Access-Jwt-Assertion`)
+5. Validates JWT claims (expiration, issuer) for defense-in-depth
+6. Checks client ID against user's `authorized_client_ids` in KV
+7. Sets authenticated context in `event.locals.adminAuth` with username and identity for downstream handlers
 
 **Supported Authentication Type:**
 
@@ -153,7 +155,7 @@ The app provides authenticated admin endpoints for managing photos. All endpoint
 
 - **Authentication**: Handled by hooks layer (see Authentication & Authorization above)
 - **Flow**: Extract imageId from URL → Verify ownership → Delete from D1 → Delete from Cloudflare Images → Return response
-- **Ownership**: Ensures users can only delete their own images based on domain-derived username
+- **Ownership**: Ensures users can only delete their own images based on username from authenticated context
 - **Workflow with Lookup**: For automation tools with only photo names, use lookup endpoint first to get ID, then use delete endpoint
 - **Response**: `{ success: true, id: string, message: string, warning?: string }`
 
@@ -168,17 +170,17 @@ The app provides authenticated admin endpoints for managing photos. All endpoint
 
 ### File Structure
 
-- `src/routes/+layout.server.ts` - Domain-based user detection, KV config loading, D1 image fetching
+- `src/routes/+layout.server.ts` - Domain-to-username lookup via KV, user config loading, D1 image fetching
 - `src/routes/+page.server.ts` - Image data passing from layout
 - `src/routes/+page.svelte` - Main gallery display with infinite scroll
 - `src/routes/admin/api/images/+server.ts` - Authenticated upload endpoint (POST, Cloudflare Access + D1 + Images)
 - `src/routes/admin/api/images/by-name/[photoName]/+server.ts` - Authenticated lookup endpoint (GET, finds image ID by photo name)
 - `src/routes/admin/api/images/[imageId]/+server.ts` - Authenticated delete endpoint (DELETE, Cloudflare Access + ownership verification)
-- `src/routes/api/images/+server.ts` - Paginated image data API (D1 queries)
+- `src/routes/api/images/+server.ts` - Paginated image data API with domain-to-username lookup (D1 queries)
 - `src/lib/InfiniteScroll.svelte` - Reusable infinite scroll component
-- `src/lib/config.ts` - Configuration types, domain parsing, and KV utilities
+- `src/lib/config.ts` - Configuration types, domain-to-username lookup, and KV utilities
 - `src/lib/admin-utils.ts` - Shared validation and error handling utilities for admin endpoints
-- `src/hooks.server.ts` - Dynamic favicon handling using KV config
+- `src/hooks.server.ts` - Admin authentication with domain lookup, dynamic favicon handling using KV config
 - `migrations/0001_initial_schema.sql` - D1 database schema and indexes
 - `migrations/0002_change_sort_to_captured.sql` - Change primary sort order from uploaded to captured date
 - `migrations/0003_add_name_index.sql` - Add composite index for lookup-by-name queries
