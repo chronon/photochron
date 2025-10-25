@@ -43,8 +43,8 @@ describe('hooks.server', () => {
       return Object.assign(event, overrides);
     };
 
-    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-    let consoleLogSpy: ReturnType<typeof vi.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof vi.fn>;
+    let consoleLogSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

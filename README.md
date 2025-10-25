@@ -1,6 +1,8 @@
 # Photochron
 
-A multi-user, domain-based photo gallery application built with SvelteKit and deployed on Cloudflare Workers. Each domain automatically displays a different user's photos using Cloudflare KV for configuration and Cloudflare D1 for image metadata.
+An anti-social media photo gallery, featuring NO friends, likes, follows, or shares. Built with SvelteKit and deployed on Cloudflare Workers.
+
+My instance as an example: [silklag.com](https://silklag.com/)
 
 ## Features
 
@@ -8,8 +10,8 @@ A multi-user, domain-based photo gallery application built with SvelteKit and de
 - **Domain-based routing** - Explicit domain-to-username mappings in KV (supports multiple domains per user and arbitrary mappings)
 - **KV-based configuration** - All config (global settings, domain mappings, user config) stored in Cloudflare KV
 - **D1 database** - Image metadata stored in Cloudflare D1 for fast querying
-- **Photo upload** - Upload photos via authenticated API endpoint at `domain.com/admin/api/images`
-- **Photo deletion** - Delete photos via authenticated API endpoint at `domain.com/admin/api/images/{imageId}`
+- **Photo upload** - Upload photos via authenticated API endpoint at `/admin/api/images`
+- **Photo deletion** - Delete photos via authenticated API endpoint at `/admin/api/images/{imageId}`
 - **Infinite scroll** - Smooth loading of photo galleries
 - **Dynamic favicons** - User-specific favicons and touch icons per domain
 - **Cloudflare Images integration** - Optimized image delivery and storage
@@ -21,7 +23,7 @@ The application looks up the username from the domain via KV, loads user configu
 
 1. **Domain** → **KV Lookup** → **Username** → **User Config** → **D1 Images**
 2. **example.com** → KV: `domain:example.com` → `"alice"` → KV: `user:alice` → D1: `SELECT * FROM images WHERE username = 'alice'`
-3. **domain.com/admin/api/images** → Domain lookup → Authenticated upload → Cloudflare Images + D1 insert
+3. **example.com/admin/api/images** → Domain lookup → Authenticated upload → Cloudflare Images + D1 insert
 
 ## Quick Start
 
@@ -120,16 +122,16 @@ Delete a photo. Verifies ownership before deletion.
 
 Response: `{ success: true, id, message }`
 
+## Clients
+
+There is no admin interface, just API endpoints for add, find, and delete. For Apple devices these two shortcuts make adding and deleting photos from share sheets fast and seamless.
+
+- Add: https://www.icloud.com/shortcuts/d44f9cce647f4acd837f346fddeefe2f
+- Delete: https://www.icloud.com/shortcuts/ad0dc21dbab84deebbba42fe72507453
+
 ## Admin Authentication
 
 All `/admin/*` routes use two-layer security: Cloudflare Access validates credentials at the edge, then SvelteKit hooks verify JWT claims and check client IDs against authorized lists in KV.
-
-### Setup
-
-1. **Configure Cloudflare Access:** Create application for `/admin` path in Cloudflare Zero Trust dashboard
-2. **Create Service Token:** Generate token in Access → Service Auth → Service Tokens
-3. **Add to config:** Update `config/app.jsonc` with team domain and authorized client IDs
-4. **Deploy:** Run `pnpm run deploy`
 
 ### Local Development
 
@@ -172,7 +174,7 @@ The application uses Cloudflare KV (configuration), D1 (image metadata), Images 
 
 ### Adding a User
 
-1. **Set up Cloudflare Access** (one-time): Configure Access application for `/admin` path if not already done
+1. **Set up Cloudflare Access** (one-time): Configure Access application for `/admin/*` path if not already done
 2. **Create Service Token**: Generate Cloudflare Access service token for upload authentication
 3. **Edit `config/app.jsonc`**: Add user entry with `domains` array (one or more domains), avatar, and authorized client IDs (include service token client ID)
 4. **Deploy**: Run `pnpm run deploy` to generate config (including domain mappings), upload to KV, and deploy
