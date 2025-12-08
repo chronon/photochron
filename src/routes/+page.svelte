@@ -9,9 +9,15 @@
 
   let { data }: Props = $props();
 
-  let allImages = $state([...data.images]);
-  let hasMore = $state(data.hasMore);
+  let additionalImages = $state<typeof data.images>([]);
+  let allImages = $derived([...data.images, ...additionalImages]);
+  let hasMore = $state(false);
   let isLoading = $state(false);
+
+  $effect(() => {
+    additionalImages = [];
+    hasMore = data.hasMore;
+  });
 
   const loadMore = async () => {
     if (isLoading || !hasMore) return;
@@ -25,7 +31,7 @@
       };
 
       if (result.images && result.images.length > 0) {
-        allImages = [...allImages, ...result.images];
+        additionalImages = [...additionalImages, ...result.images];
       }
       hasMore = result.hasMore;
     } catch (error) {
