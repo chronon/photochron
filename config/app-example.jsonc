@@ -12,6 +12,8 @@
     "name": "photochron",
     // Workers compatibility date
     "compatibility_date": "2024-10-04",
+    // Workers compatibility flags
+    "compatibility_flags": ["nodejs_compat", "nodejs_als"],
     "vars": {
       // Cloudflare account ID (find in dashboard URL or Overview page)
       "CF_ACCOUNT_ID": "your-cloudflare-account-id",
