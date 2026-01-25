@@ -50,7 +50,7 @@
 {#each allImages as image (image.id)}
   <div class="mx-auto mb-8 max-w-5xl rounded-lg contain-layout contain-style">
     <div class="flex items-center p-2">
-      <div class="mr-2 h-8 w-8 flex-shrink-0 rounded-full bg-gray-200">
+      <div class="mr-2 h-8 w-8 shrink-0 rounded-full bg-gray-200">
         <img
           loading="lazy"
           src={data.config.userAvatar}
@@ -68,7 +68,12 @@
       {/if}
       <img
         loading="lazy"
-        src="{data.config.imgBase}/{image.id}/{data.config.imgVariant}"
+        src="{data.config.imgBase}/{image.id}/width=1024,quality=85,format=auto"
+        srcset="{data.config.imgBase}/{image.id}/width=640,quality=85,format=auto 640w,
+                {data.config.imgBase}/{image.id}/width=1024,quality=85,format=auto 1024w,
+                {data.config.imgBase}/{image.id}/width=1536,quality=85,format=auto 1536w,
+                {data.config.imgBase}/{image.id}/width=2048,quality=85,format=auto 2048w"
+        sizes="(max-width: 640px) 100vw, 1024px"
         alt={image.caption}
         class="w-full object-contain transition-opacity duration-300"
         class:opacity-0={!loadedImages.has(image.id)}

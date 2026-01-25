@@ -1,6 +1,5 @@
 export interface GlobalKVConfig {
   imageBase: string;
-  imageVariant: string;
 }
 
 export interface UserKVConfig {

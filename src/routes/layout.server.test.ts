@@ -12,8 +12,7 @@ describe('+layout.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -78,7 +77,6 @@ describe('+layout.server', () => {
 
       expect(result.config).toEqual({
         imgBase: 'https://cdn.example.com',
-        imgVariant: 'gallery',
         userAvatar: 'https://cdn.example.com/avatar-123/profile',
         userName: 'John Doe'
       });
@@ -140,8 +138,7 @@ describe('+layout.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -192,8 +189,7 @@ describe('+layout.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }

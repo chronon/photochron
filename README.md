@@ -51,7 +51,11 @@ Edit `config/app.jsonc` with your settings:
 
 Edit `.dev.vars` with your local development secrets
 
-### 3. Set up Database
+### 3. Enable Cloudflare Images Flexible Variants
+
+**Required:** Enable "Flexible variants" in your Cloudflare Images settings to allow responsive image delivery with dynamic URL parameters.
+
+### 4. Set up Database
 
 Create and migrate your D1 database:
 
@@ -64,13 +68,13 @@ pnpm wrangler d1 migrations apply photochron --local  # For local dev
 pnpm wrangler d1 migrations apply photochron          # For production
 ```
 
-### 4. Development
+### 5. Development
 
 ```bash
 pnpm dev  # http://localhost:5173
 ```
 
-### 5. Deploy
+### 6. Deploy
 
 ```bash
 pnpm run deploy
