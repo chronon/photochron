@@ -204,8 +204,7 @@ describe('hooks.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -250,8 +249,7 @@ describe('hooks.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -294,8 +292,7 @@ describe('hooks.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -338,8 +335,7 @@ describe('hooks.server', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }

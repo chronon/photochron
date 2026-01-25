@@ -67,8 +67,7 @@ pnpm deploy:preview         # Dry run deployment
 ```jsonc
 {
   "global": {
-    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
-    "imageVariant": "default"
+    "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH"
   },
   "wrangler": {
     "vars": {

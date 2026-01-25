@@ -85,8 +85,7 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -116,8 +115,7 @@ describe('config', () => {
 
       expect(result).toEqual({
         global: {
-          imageBase: 'https://cdn.example.com',
-          imageVariant: 'gallery'
+          imageBase: 'https://cdn.example.com'
         },
         user: {
           domains: ['johndoe.com'],
@@ -144,8 +142,7 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -192,8 +189,7 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -212,8 +208,7 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }
@@ -235,8 +230,7 @@ describe('config', () => {
           if (key === 'global') {
             return Promise.resolve(
               JSON.stringify({
-                imageBase: 'https://cdn.example.com',
-                imageVariant: 'gallery'
+                imageBase: 'https://cdn.example.com'
               })
             );
           }

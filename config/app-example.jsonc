@@ -2,8 +2,6 @@
   "global": {
     // Cloudflare Images delivery URL (find in Images dashboard)
     "imageBase": "https://imagedelivery.net/YOUR-ACCOUNT-HASH",
-    // Default variant for image delivery
-    "imageVariant": "default",
     // Username to use for localhost development
     "devUser": "yourname"
   },

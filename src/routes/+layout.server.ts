@@ -46,7 +46,6 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
 
   const config = {
     imgBase: global.imageBase,
-    imgVariant: global.imageVariant,
     userAvatar: `${global.imageBase}/${user.avatar.id}/${user.avatar.variant}`,
     userName: user.profile.name
   };
