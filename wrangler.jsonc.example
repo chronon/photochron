@@ -16,5 +16,9 @@
   "placement": {
     "mode": "smart"
   },
+  "limits": {
+    "cpu_ms": 50,
+    "subrequests": 10
+  },
   "routes": []
 }
