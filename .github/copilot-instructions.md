@@ -23,7 +23,7 @@
 - **Languages**: TypeScript, Svelte, CSS (Tailwind)
 - **Runtime**: Cloudflare Workers (Edge runtime)
 - **Package Manager**: pnpm (required, not npm/yarn)
-- **Node Version**: 22.x+ (CI uses 22.x)
+- **Node Version**: 24.x+ (CI uses 24.x)
 
 ## Build and Validation Commands
 
@@ -380,7 +380,7 @@ SvelteKit hooks (`src/hooks.server.ts`) intercept favicon requests, load avatar 
 ### GitHub Actions (`.github/workflows/ci.yml`)
 
 - **Triggers**: All branches except `main`
-- **Environment**: Node.js 22.x
+- **Environment**: Node.js 24.x
 - **Steps**: Install pnpm → Install deps → Type check → Run tests
 - **Note**: Deployment requires Cloudflare KV configuration
 
@@ -398,7 +398,7 @@ Both commands MUST pass or CI will fail.
 
 ### Runtime Requirements
 
-- **Node.js**: 22.x+ (engine-strict=true in .npmrc)
+- **Node.js**: 24.x+ (engine-strict=true in .npmrc)
 - **pnpm**: Required package manager
 - **Cloudflare Workers**: Deployment target
 
