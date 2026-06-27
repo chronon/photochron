@@ -25,13 +25,16 @@ This file provides guidance to AI assistants when working with code in this repo
 - `pnpm deploy` - Full deployment (build config, upload KV, build app, deploy to Workers)
 - `pnpm deploy:preview` - Preview deployment (dry run)
 
+**Deploy authentication:** Wrangler uses `wrangler login` (OAuth) interactively, or a scoped `CLOUDFLARE_API_TOKEN` env var (Workers Scripts + KV Storage: Edit) for headless environments.
+
+**Automated deploys:** Pushes to `main` deploy via `.github/workflows/deploy.yml`. Since `config/app.jsonc` is gitignored, it is injected from the `APP_JSONC` repo secret at deploy time; auth uses the `CLOUDFLARE_API_TOKEN` secret. Update the secret (`gh secret set APP_JSONC < config/app.jsonc`) whenever the config changes.
+
 ### Documentation
 
 When asked to "update docs", update all of the following files:
 
 - `README.md` - User-facing documentation
 - `AGENTS.md` - This file, guidance for AI assistants
-- `.github/copilot-instructions.md` - Instructions for GitHub Copilot
 
 ## Coding Standards
 
