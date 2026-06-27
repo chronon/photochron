@@ -29,14 +29,12 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   let hasMore: boolean;
 
   try {
-    // Query for PAGE_SIZE + 1 to determine if there are more
     const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ?'
+      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC, id DESC LIMIT ?'
     )
       .bind(username, PAGE_SIZE + 1)
       .all();
 
-    // Return only PAGE_SIZE images
     images = result.results.slice(0, PAGE_SIZE) as typeof images;
     hasMore = result.results.length > PAGE_SIZE;
   } catch (error) {

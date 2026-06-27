@@ -2,11 +2,11 @@
   import { onMount, createEventDispatcher } from 'svelte';
 
   interface Props {
-    threshold?: number;
+    rootMargin?: string;
     hasMore?: boolean;
   }
 
-  let { threshold = 100, hasMore = true }: Props = $props();
+  let { rootMargin = '1500px 0px', hasMore = true }: Props = $props();
   const dispatch = createEventDispatcher();
 
   let scrollElement: HTMLDivElement | null = $state(null);
@@ -32,11 +32,11 @@
       return () => {};
     }
 
-    observer = new IntersectionObserver(handleEntries);
+    observer = new IntersectionObserver(handleEntries, { rootMargin });
     observer.observe(scrollElement);
 
     return teardownObserver;
   });
 </script>
 
-<div bind:this={scrollElement} style="width:0px; position: relative; top: -{threshold}px;"></div>
+<div bind:this={scrollElement} style="width:0px;"></div>

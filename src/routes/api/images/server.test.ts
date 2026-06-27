@@ -58,7 +58,7 @@ describe('api/images/+server', () => {
       } as unknown as D1Database;
 
       const event = {
-        url: new URL('https://johndoe.com/api/images?offset=0'),
+        url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
             PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
@@ -98,7 +98,7 @@ describe('api/images/+server', () => {
       } as unknown as D1Database;
 
       const event = {
-        url: new URL('https://johndoe.com/api/images?offset=0'),
+        url: new URL('https://johndoe.com/api/images'),
         platform: {
           env: {
             PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
@@ -131,7 +131,7 @@ describe('api/images/+server', () => {
       ]);
     });
 
-    it('uses offset parameter from query string', async () => {
+    it('uses cursor parameters from query string for keyset pagination', async () => {
       const bindMock = vi.fn(() => ({
         all: vi.fn(() =>
           Promise.resolve({
@@ -147,7 +147,7 @@ describe('api/images/+server', () => {
       } as unknown as D1Database;
 
       const event = {
-        url: new URL('https://johndoe.com/api/images?offset=10'),
+        url: new URL('https://johndoe.com/api/images?before=2025-01-01T00:00:00Z&id=img10'),
         platform: {
           env: {
             PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
@@ -159,10 +159,16 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 16, 10);
+      expect(bindMock).toHaveBeenCalledWith(
+        'johndoe',
+        '2025-01-01T00:00:00Z',
+        '2025-01-01T00:00:00Z',
+        'img10',
+        16
+      );
     });
 
-    it('defaults offset to 0 when not provided', async () => {
+    it('fetches the first page when no cursor is provided', async () => {
       const bindMock = vi.fn(() => ({
         all: vi.fn(() =>
           Promise.resolve({
@@ -190,7 +196,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('johndoe', 16, 0);
+      expect(bindMock).toHaveBeenCalledWith('johndoe', 16);
     });
 
     it('extracts username from domain', async () => {
@@ -220,7 +226,7 @@ describe('api/images/+server', () => {
 
       await GET(event);
 
-      expect(bindMock).toHaveBeenCalledWith('alice', 16, 0);
+      expect(bindMock).toHaveBeenCalledWith('alice', 16);
     });
 
     it('returns error when D1 database is unavailable', async () => {
