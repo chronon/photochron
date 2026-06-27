@@ -126,7 +126,8 @@ The app stores image metadata in Cloudflare D1:
   - `idx_username_captured` - Optimizes gallery queries by username and captured date
   - `idx_username_name_uploaded` - Optimizes lookup-by-name queries (uses `COLLATE NOCASE` for case-insensitive matching)
 - **Queries**:
-  - Gallery: `SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?`
+  - Gallery (first page): `SELECT * FROM images WHERE username = ? ORDER BY captured DESC, id DESC LIMIT ?`
+  - Gallery (next page, keyset/cursor pagination): `SELECT * FROM images WHERE username = ? AND (captured < ? OR (captured = ? AND id < ?)) ORDER BY captured DESC, id DESC LIMIT ?` — the client passes the last image's `captured` and `id` as the cursor, so the index seeks directly instead of skipping rows with `OFFSET`
   - Lookup: `SELECT id, name, captured, uploaded FROM images WHERE username = ? AND name = ? COLLATE NOCASE ORDER BY uploaded DESC LIMIT 1`
 
 ### Authentication & Authorization

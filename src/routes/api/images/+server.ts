@@ -13,9 +13,9 @@ export const GET: RequestHandler = async ({ url, platform }) => {
     return json({ error: 'KV namespace not available' }, { status: 500 });
   }
 
-  const offset = parseInt(url.searchParams.get('offset') || '0');
+  const before = url.searchParams.get('before');
+  const beforeId = url.searchParams.get('id');
 
-  // Determine username from domain
   let username: string;
   try {
     username = await getUsernameFromDomain(
@@ -26,7 +26,6 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('Failed to determine username:', errorMessage);
-    // Map domain lookup errors to appropriate HTTP status codes
     if (errorMessage.includes('DEV_USER')) {
       return json({ error: 'Configuration error' }, { status: 500 });
     }
@@ -34,14 +33,17 @@ export const GET: RequestHandler = async ({ url, platform }) => {
   }
 
   try {
-    // Query for PAGE_SIZE + 1 to determine if there are more
-    const result = await platform.env.PCHRON_DB.prepare(
-      'SELECT * FROM images WHERE username = ? ORDER BY captured DESC LIMIT ? OFFSET ?'
-    )
-      .bind(username, PAGE_SIZE + 1, offset)
-      .all();
+    const statement =
+      before && beforeId
+        ? platform.env.PCHRON_DB.prepare(
+            'SELECT * FROM images WHERE username = ? AND (captured < ? OR (captured = ? AND id < ?)) ORDER BY captured DESC, id DESC LIMIT ?'
+          ).bind(username, before, before, beforeId, PAGE_SIZE + 1)
+        : platform.env.PCHRON_DB.prepare(
+            'SELECT * FROM images WHERE username = ? ORDER BY captured DESC, id DESC LIMIT ?'
+          ).bind(username, PAGE_SIZE + 1);
 
-    // Return only PAGE_SIZE images
+    const result = await statement.all();
+
     const images = result.results.slice(0, PAGE_SIZE);
     const hasMore = result.results.length > PAGE_SIZE;
 
