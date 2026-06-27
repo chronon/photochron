@@ -76,9 +76,28 @@ pnpm dev  # http://localhost:5173
 
 ### 6. Deploy
 
+Deploy from your machine:
+
 ```bash
 pnpm run deploy
 ```
+
+Wrangler handles authentication. On an interactive machine this uses `wrangler login` (OAuth in a browser). For headless environments (CI, or a VM without a browser), set a scoped API token instead — Wrangler picks it up automatically, no OAuth prompt:
+
+```bash
+export CLOUDFLARE_API_TOKEN="<token>"   # scopes: Workers Scripts: Edit, Workers KV Storage: Edit
+```
+
+#### Automated deploys (GitHub Actions)
+
+Pushes to `main` deploy automatically via `.github/workflows/deploy.yml` (also runnable on demand from the Actions tab). Because `config/app.jsonc` is gitignored, it is injected from a repository secret at deploy time. Configure two secrets once:
+
+```bash
+gh secret set CLOUDFLARE_API_TOKEN          # scoped token (Workers Scripts + KV Storage: Edit)
+gh secret set APP_JSONC < config/app.jsonc  # your app config, kept out of git
+```
+
+The workflow writes `APP_JSONC` to `config/app.jsonc`, then runs `pnpm run deploy`. Whenever you change `config/app.jsonc`, re-run the `APP_JSONC` command so the secret stays in sync.
 
 ## Configuration
 
