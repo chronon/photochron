@@ -1,0 +1,77 @@
+name: Backup D1
+
+# Exports a D1 database to a SQL dump and stores it both as a GitHub artifact
+# (off-Cloudflare copy) and, optionally, in an R2 bucket (long retention).
+#
+# Configure via repository variables / secrets (Settings → Secrets and variables → Actions):
+#   Variables:
+#     CLOUDFLARE_ACCOUNT_ID  (required) — target account
+#     D1_DATABASE_NAME       (required) — name of the D1 database to export
+#     BACKUP_R2_BUCKET       (optional) — R2 bucket for long retention; R2 step is skipped if unset
+#   Secrets:
+#     BACKUP_CLOUDFLARE_API_TOKEN  (required) — dedicated token scoped to D1 (read) and,
+#                                   if using R2, Workers R2 Storage (edit). Kept separate from
+#                                   the deploy token so backups and deploys have isolated scopes.
+#
+# Create the R2 bucket once if you want the R2 copy:
+#   wrangler r2 bucket create <your-bucket>
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # daily at 03:17 UTC (off-peak to reduce scheduler delay)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backup-d1
+  cancel-in-progress: false
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+  D1_DATABASE_NAME: ${{ vars.D1_DATABASE_NAME }}
+  R2_BUCKET: ${{ vars.BACKUP_R2_BUCKET }}
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate configuration
+        run: |
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$D1_DATABASE_NAME" ]; then
+            echo "::error::Set the CLOUDFLARE_ACCOUNT_ID and D1_DATABASE_NAME repository variables"
+            exit 1
+          fi
+
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+
+      - name: Export D1 database
+        run: |
+          STAMP="$(date -u +%Y%m%d-%H%M%S)"
+          FILE="${D1_DATABASE_NAME}-${STAMP}.sql"
+          npx -y wrangler@4 d1 export "$D1_DATABASE_NAME" --remote --output "$FILE"
+          echo "BACKUP_FILE=$FILE" >> "$GITHUB_ENV"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.BACKUP_CLOUDFLARE_API_TOKEN }}
+
+      - name: Upload artifact (off-Cloudflare copy, 90-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Upload to R2 (long retention)
+        if: env.R2_BUCKET != ''
+        run: |
+          npx -y wrangler@4 r2 object put \
+            "${R2_BUCKET}/d1-backups/${BACKUP_FILE}" \
+            --file "$BACKUP_FILE" --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.BACKUP_CLOUDFLARE_API_TOKEN }}
