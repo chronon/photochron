@@ -90,7 +90,7 @@ export CLOUDFLARE_API_TOKEN="<token>"   # scopes: Workers Scripts: Edit, Workers
 
 #### Automated deploys (GitHub Actions)
 
-Pushes to `main` deploy automatically via `.github/workflows/deploy.yml` (also runnable on demand from the Actions tab). Because `config/app.jsonc` is gitignored, it is injected from a repository secret at deploy time. Configure two secrets once:
+Pushes to `main` deploy automatically via `.github/workflows/ci-deploy.yml` (also runnable on demand from the Actions tab). Because `config/app.jsonc` is gitignored, it is injected from a repository secret at deploy time. Configure two secrets once:
 
 ```bash
 gh secret set CLOUDFLARE_API_TOKEN          # scoped token (Workers Scripts + KV Storage: Edit)
@@ -98,6 +98,38 @@ gh secret set APP_JSONC < config/app.jsonc  # your app config, kept out of git
 ```
 
 The workflow writes `APP_JSONC` to `config/app.jsonc`, then runs `pnpm run deploy`. Whenever you change `config/app.jsonc`, re-run the `APP_JSONC` command so the secret stays in sync.
+
+## Backups
+
+D1's built-in [Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/) provides point-in-time recovery for the last 30 days, which covers most operational mistakes. For protection against longer-horizon issues (corruption discovered late, an accidentally deleted database, or lost account access), `.github/workflows/backup-d1.yml` exports the database to a SQL dump on a daily schedule (and on demand from the Actions tab).
+
+Each run stores the dump as a **GitHub artifact** (off-Cloudflare, 90-day retention) and, optionally, in an **R2 bucket** for long retention. The workflow is generic — configure it per deployment via repository variables and secrets (Settings → Secrets and variables → Actions):
+
+```bash
+gh variable set CLOUDFLARE_ACCOUNT_ID   # target account id
+gh variable set D1_DATABASE_NAME        # e.g. photochron
+gh variable set BACKUP_R2_BUCKET        # optional; R2 step is skipped if unset
+```
+
+The backup workflow uses its own secret, `BACKUP_CLOUDFLARE_API_TOKEN`, kept separate from the deploy token so backups and deploys have isolated scopes. Create a dedicated token scoped to **D1 (read)** and, if using R2, **Workers R2 Storage (edit)**:
+
+```bash
+gh secret set BACKUP_CLOUDFLARE_API_TOKEN   # scopes: D1 (read) + Workers R2 Storage (edit)
+```
+
+Create the R2 bucket once with `pnpm wrangler r2 bucket create <your-bucket>`.
+
+> **Note:** Backups cover image _metadata_ only. The photos themselves live in Cloudflare Images; if that's your sole copy of the originals, back them up separately.
+
+### Restoring from a dump
+
+Download a dump (from the workflow run's artifacts, or `pnpm wrangler r2 object get <bucket>/<file> --file=backup.sql`), then apply it:
+
+```bash
+pnpm wrangler d1 execute <database> --remote --file=backup.sql
+```
+
+Test a restore against a scratch database periodically so you know the dump imports cleanly.
 
 ## Configuration
 

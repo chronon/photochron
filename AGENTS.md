@@ -27,7 +27,9 @@ This file provides guidance to AI assistants when working with code in this repo
 
 **Deploy authentication:** Wrangler uses `wrangler login` (OAuth) interactively, or a scoped `CLOUDFLARE_API_TOKEN` env var (Workers Scripts + KV Storage: Edit) for headless environments.
 
-**Automated deploys:** Pushes to `main` deploy via `.github/workflows/deploy.yml`. Since `config/app.jsonc` is gitignored, it is injected from the `APP_JSONC` repo secret at deploy time; auth uses the `CLOUDFLARE_API_TOKEN` secret. Update the secret (`gh secret set APP_JSONC < config/app.jsonc`) whenever the config changes.
+**Automated deploys:** Pushes to `main` deploy via `.github/workflows/ci-deploy.yml`. Since `config/app.jsonc` is gitignored, it is injected from the `APP_JSONC` repo secret at deploy time; auth uses the `CLOUDFLARE_API_TOKEN` secret. Update the secret (`gh secret set APP_JSONC < config/app.jsonc`) whenever the config changes.
+
+**Backups:** D1 Time Travel covers point-in-time recovery for 30 days. For longer-horizon protection, `.github/workflows/backup-d1.yml` runs `wrangler d1 export` on a daily schedule (and via `workflow_dispatch`), storing the SQL dump as a GitHub artifact and, if configured, in R2. The workflow is generic — no deployment-specific values are committed; it reads repository variables `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_NAME`, and optional `BACKUP_R2_BUCKET` (R2 step is skipped when unset). It uses a dedicated `BACKUP_CLOUDFLARE_API_TOKEN` secret (separate from the deploy token for scope isolation) needing D1 (read) and, for R2, Workers R2 Storage (edit) scopes. Backups cover image metadata only — the photos live in Cloudflare Images. Restore with `wrangler d1 execute <database> --remote --file=backup.sql`.
 
 ### Documentation
 
