@@ -111,10 +111,10 @@ gh variable set D1_DATABASE_NAME        # e.g. photochron
 gh variable set BACKUP_R2_BUCKET        # optional; R2 step is skipped if unset
 ```
 
-The backup workflow uses its own secret, `BACKUP_CLOUDFLARE_API_TOKEN`, kept separate from the deploy token so backups and deploys have isolated scopes. Create a dedicated token scoped to **D1 (read)** and, if using R2, **Workers R2 Storage (edit)**:
+The backup workflow uses its own secret, `BACKUP_CLOUDFLARE_API_TOKEN`, kept separate from the deploy token so backups and deploys have isolated scopes. Create a dedicated token scoped to **D1 (edit)** and, if using R2, **Workers R2 Storage (edit)**. Note `d1 export` creates an export job (a write operation), so it requires **Edit**, not just Read:
 
 ```bash
-gh secret set BACKUP_CLOUDFLARE_API_TOKEN   # scopes: D1 (read) + Workers R2 Storage (edit)
+gh secret set BACKUP_CLOUDFLARE_API_TOKEN   # scopes: D1 (edit) + Workers R2 Storage (edit)
 ```
 
 Create the R2 bucket once with `pnpm wrangler r2 bucket create <your-bucket>`.

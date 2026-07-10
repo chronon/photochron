@@ -9,9 +9,11 @@ name: Backup D1
 #     D1_DATABASE_NAME       (required) — name of the D1 database to export
 #     BACKUP_R2_BUCKET       (optional) — R2 bucket for long retention; R2 step is skipped if unset
 #   Secrets:
-#     BACKUP_CLOUDFLARE_API_TOKEN  (required) — dedicated token scoped to D1 (read) and,
-#                                   if using R2, Workers R2 Storage (edit). Kept separate from
-#                                   the deploy token so backups and deploys have isolated scopes.
+#     BACKUP_CLOUDFLARE_API_TOKEN  (required) — dedicated token scoped to D1 (edit) and,
+#                                   if using R2, Workers R2 Storage (edit). D1 export creates an
+#                                   export job (a write op), so it needs Edit, not just Read.
+#                                   Kept separate from the deploy token so backups and deploys
+#                                   have isolated scopes.
 #
 # Create the R2 bucket once if you want the R2 copy:
 #   wrangler r2 bucket create <your-bucket>
