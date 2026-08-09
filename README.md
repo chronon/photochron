@@ -55,6 +55,8 @@ Edit `.dev.vars` with your local development secrets
 
 **Required:** Enable "Flexible variants" in your Cloudflare Images settings to allow responsive image delivery with dynamic URL parameters.
 
+Also create three named variants for the dynamic favicon system — `favicon16` (16x16), `favicon32` (32x32), and `apple180` (180x180), all PNG. Variants are account-level, so this is a one-time setup that applies to every user's avatar. Without them, favicons fall back to the static files in `/static/`.
+
 ### 4. Set up Database
 
 Create and migrate your D1 database:
@@ -175,7 +177,9 @@ Response: `{ success: true, id, name, captured, uploaded }`
 
 Delete a photo. Verifies ownership before deletion.
 
-Response: `{ success: true, id, message }`
+Response: `{ success: true, id, message, warning? }` — `warning` is present when the D1 row was removed but the Cloudflare Images delete did not succeed.
+
+All endpoints return errors as `{ success: false, error: string }`.
 
 ## Clients
 
@@ -190,7 +194,9 @@ All `/admin/*` routes use two-layer security: Cloudflare Access validates creden
 
 ### Local Development
 
-Copy `.dev.vars.example` to `.dev.vars` and fill in your values. When `CF_ACCESS_TEAM_DOMAIN=dev`, authentication is bypassed. This only activates locally (`.dev.vars` is not deployed).
+Copy `.dev.vars.example` to `.dev.vars` and fill in your values: `CF_IMAGES_TOKEN` (Cloudflare Images API token), `CF_ACCESS_TEAM_DOMAIN` (Access team domain), `DEV_USER` (username served on localhost), and `DEV_CLIENT_ID` (local authorization bypass).
+
+When `CF_ACCESS_TEAM_DOMAIN=dev`, authentication is bypassed. This only activates locally (`.dev.vars` is not deployed).
 
 ## Development Commands
 
@@ -230,11 +236,16 @@ The application uses Cloudflare KV (configuration), D1 (image metadata), Images 
 ### Adding a User
 
 1. **Set up Cloudflare Access** (one-time): Configure Access application for `/admin/*` path if not already done
-2. **Create Service Token**: Generate Cloudflare Access service token for upload authentication
-3. **Edit `config/app.jsonc`**: Add user entry with `domains` array (one or more domains), avatar, and authorized client IDs (include service token client ID)
-4. **Deploy**: Run `pnpm run deploy` to generate config (including domain mappings), upload to KV, and deploy
-5. **Create favicon variants** (optional): Add `favicon16` (16x16), `favicon32` (32x32), `apple180` (180x180) variants for the user's avatar in Cloudflare Images. Falls back to static files if not present.
-6. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
+2. **Create service token**: Zero Trust dashboard → Access controls → Service credentials. Copy the Client ID and Client Secret immediately — the secret is shown only once. The duration field defaults to 1 year; set a longer duration to match the other tokens unless you intend to rotate annually.
+3. **Add the domain to the Access application**: Add `NEWDOMAIN/admin/*` to the application's self-hosted domains. Without this, the domain's admin routes never pass through Access, and every admin request is rejected.
+4. **Add the token to the Access policy**: The policy admits specific service tokens by ID rather than "any Access service token", so a new token is refused until it is added to the policy's include list.
+5. **Upload avatar**: Add the user's avatar to Cloudflare Images and note its ID. The `favicon16`, `favicon32`, and `apple180` variants are account-level and apply to every image automatically — no per-user variant setup is needed. Missing variants fall back to the static files in `/static/`.
+6. **Edit `config/app.jsonc`**: Add user entry with `domains` array (one or more domains), the avatar ID, and the service token client ID in `authorized_client_ids`
+7. **Deploy**: Run `pnpm run deploy` to generate config (including domain mappings), upload to KV, and deploy. If the domain's zone is in the same Cloudflare account, the `custom_domain` route provisions its DNS record automatically.
+8. **Update the `APP_JSONC` secret**: Run `gh secret set APP_JSONC < config/app.jsonc`. Since `app.jsonc` is gitignored, the next push to `main` rebuilds KV from this secret — a stale secret silently removes the new user.
+9. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
+
+**How the two authorization layers differ:** the Access policy admits every listed service token on every listed domain. Per-user isolation comes from `authorized_client_ids` in KV, enforced by `handleAdminAuth` — that is what stops one user's token from managing another user's photos.
 
 ### Updating a User
 
