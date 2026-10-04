@@ -1,0 +1,3 @@
+[mcp_servers.cloudflare]
+url = "https://mcp.cloudflare.com/mcp"
+bearer_token_env_var = "CLOUDFLARE_MCP_TOKEN"
