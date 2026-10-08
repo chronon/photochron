@@ -1,4 +1,4 @@
-import { json, type NumericRange } from '@sveltejs/kit';
+import { env as workerEnv } from 'cloudflare:workers';
 import type { AuthenticatedIdentity } from './auth';
 
 /**
@@ -19,11 +19,11 @@ export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
 export function createErrorResponse(
   logPrefix: string,
   message: string,
-  status: NumericRange<400, 599>,
+  status: number,
   logDetails?: string
 ): Response {
   console.error(`${logPrefix} ${logDetails || message}`);
-  return json({ success: false, error: message }, { status });
+  return Response.json({ success: false, error: message }, { status });
 }
 
 /**
@@ -53,29 +53,15 @@ export function validateAuth(
 /**
  * Validates platform environment and database binding.
  *
- * @param platform - SvelteKit platform object
  * @param logPrefix - Prefix for console logging
  * @param requiredBindings - Optional list of required env bindings to validate
  * @returns Validated database and environment, or error response
  */
 export function validatePlatformEnv(
-  platform: App.Platform | undefined,
   logPrefix: string,
   requiredBindings: string[] = []
 ): ValidationResult<{ db: D1Database; env: Record<string, unknown> }> {
-  if (!platform?.env) {
-    return {
-      valid: false,
-      response: createErrorResponse(
-        logPrefix,
-        'Platform not available',
-        500,
-        'Platform environment not available'
-      )
-    };
-  }
-
-  const { PCHRON_DB: db, ...env } = platform.env;
+  const { PCHRON_DB: db, ...env } = workerEnv;
 
   if (!db) {
     return {

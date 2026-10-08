@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { GET } from './+server';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -57,14 +58,13 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
+        PCHRON_DB: mockD1
+      });
+
       const event = {
-        url: new URL('https://johndoe.com/api/images'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
-            PCHRON_DB: mockD1
-          }
-        }
+        url: new URL('https://johndoe.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
@@ -97,14 +97,13 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
+        PCHRON_DB: mockD1
+      });
+
       const event = {
-        url: new URL('https://johndoe.com/api/images'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
-            PCHRON_DB: mockD1
-          }
-        }
+        url: new URL('https://johndoe.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
@@ -146,15 +145,14 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
+        PCHRON_DB: mockD1,
+        DEV_USER: 'johndoe'
+      });
+
       const event = {
-        url: new URL('https://johndoe.com/api/images?before=2025-01-01T00:00:00Z&id=img10'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
-            PCHRON_DB: mockD1,
-            DEV_USER: 'johndoe'
-          }
-        }
+        url: new URL('https://johndoe.com/api/images?before=2025-01-01T00:00:00Z&id=img10')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
@@ -183,15 +181,14 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
+        PCHRON_DB: mockD1,
+        DEV_USER: 'johndoe'
+      });
+
       const event = {
-        url: new URL('https://johndoe.com/api/images'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
-            PCHRON_DB: mockD1,
-            DEV_USER: 'johndoe'
-          }
-        }
+        url: new URL('https://johndoe.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
@@ -214,14 +211,13 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('alice.com', 'alice'),
+        PCHRON_DB: mockD1
+      });
+
       const event = {
-        url: new URL('https://alice.com/api/images'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('alice.com', 'alice'),
-            PCHRON_DB: mockD1
-          }
-        }
+        url: new URL('https://alice.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       await GET(event);
@@ -231,10 +227,7 @@ describe('api/images/+server', () => {
 
     it('returns error when D1 database is unavailable', async () => {
       const event = {
-        url: new URL('https://johndoe.com/api/images'),
-        platform: {
-          env: {}
-        }
+        url: new URL('https://johndoe.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);
@@ -253,14 +246,13 @@ describe('api/images/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
+        PCHRON_DB: mockD1
+      });
+
       const event = {
-        url: new URL('https://johndoe.com/api/images'),
-        platform: {
-          env: {
-            PCHRON_KV: createMockKV('johndoe.com', 'johndoe'),
-            PCHRON_DB: mockD1
-          }
-        }
+        url: new URL('https://johndoe.com/api/images')
       } as unknown as RequestEvent<Record<string, never>, '/api/images'>;
 
       const response = await GET(event);

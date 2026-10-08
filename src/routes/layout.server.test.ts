@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { load } from './+layout.server';
 import type { LayoutServerLoad } from './$types';
 
@@ -60,14 +61,13 @@ describe('+layout.server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: mockKV,
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         url: new URL('https://johndoe.com'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV,
-            PCHRON_DB: mockD1
-          }
-        },
         parent: vi.fn(),
         depends: vi.fn(),
         untrack: vi.fn()
@@ -97,9 +97,6 @@ describe('+layout.server', () => {
     it('throws error when KV namespace is unavailable', async () => {
       const event = {
         url: new URL('https://johndoe.com'),
-        platform: {
-          env: {}
-        },
         parent: vi.fn(),
         depends: vi.fn(),
         untrack: vi.fn()
@@ -115,13 +112,12 @@ describe('+layout.server', () => {
         get: vi.fn()
       } as unknown as KVNamespace;
 
+      Object.assign(env, {
+        PCHRON_KV: mockKV
+      });
+
       const event = {
         url: new URL('https://johndoe.com'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        },
         parent: vi.fn(),
         depends: vi.fn(),
         untrack: vi.fn()
@@ -167,14 +163,13 @@ describe('+layout.server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: mockKV,
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         url: new URL('https://johndoe.com'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV,
-            PCHRON_DB: mockD1
-          }
-        },
         parent: vi.fn(),
         depends: vi.fn(),
         untrack: vi.fn()
@@ -219,15 +214,14 @@ describe('+layout.server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_KV: mockKV,
+        PCHRON_DB: mockD1,
+        DEV_USER: 'devuser'
+      });
+
       const event = {
         url: new URL('http://localhost:5173'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV,
-            PCHRON_DB: mockD1,
-            DEV_USER: 'devuser'
-          }
-        },
         parent: vi.fn(),
         depends: vi.fn(),
         untrack: vi.fn()

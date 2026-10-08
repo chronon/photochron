@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { POST } from './+server';
 import type { RequestHandler } from './$types';
 
@@ -46,15 +47,14 @@ describe('admin/api/images/+server', () => {
         formData: vi.fn(() => Promise.resolve(formData))
       } as unknown as Request;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: mockRequest,
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -91,15 +91,14 @@ describe('admin/api/images/+server', () => {
     });
 
     it('rejects request without authentication', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: {} as Request,
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {} // No adminAuth
       } as unknown as Parameters<RequestHandler>[0];
 
@@ -111,38 +110,14 @@ describe('admin/api/images/+server', () => {
       expect(json.error).toBe('Unauthorized');
     });
 
-    it('rejects request without platform environment', async () => {
-      const event = {
-        request: {} as Request,
-        platform: undefined,
-        locals: {
-          adminAuth: {
-            username: 'johndoe',
-            identity: {
-              type: 'service_token' as const,
-              clientId: 'client-123'
-            }
-          }
-        }
-      } as unknown as Parameters<RequestHandler>[0];
-
-      const response = await POST(event);
-      const json = (await response.json()) as UploadResponse;
-
-      expect(response.status).toBe(500);
-      expect(json.success).toBe(false);
-      expect(json.error).toBe('Platform not available');
-    });
-
     it('rejects request without D1 database', async () => {
+      Object.assign(env, {
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: {} as Request,
-        platform: {
-          env: {
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -179,15 +154,14 @@ describe('admin/api/images/+server', () => {
         formData: vi.fn(() => Promise.resolve(formData))
       } as unknown as Request;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: mockRequest,
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -229,15 +203,14 @@ describe('admin/api/images/+server', () => {
         formData: vi.fn(() => Promise.resolve(formData))
       } as unknown as Request;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: mockRequest,
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -268,15 +241,14 @@ describe('admin/api/images/+server', () => {
         formData: vi.fn(() => Promise.resolve(formData))
       } as unknown as Request;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         request: mockRequest,
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',

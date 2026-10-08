@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { GET } from './+server';
 import type { RequestHandler } from './$types';
 
@@ -33,13 +34,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'vacation.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -89,13 +89,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'VACATION.JPG' }, // uppercase request
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -125,13 +124,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'nonexistent.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -153,13 +151,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
     });
 
     it('returns 401 when request is not authenticated', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database
+      });
+
       const event = {
         params: { photoName: 'vacation.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database
-          }
-        },
         locals: {} // No adminAuth
       } as unknown as Parameters<RequestHandler>[0];
 
@@ -173,13 +170,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
     });
 
     it('returns 400 when photoName is empty', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database
+      });
+
       const event = {
         params: { photoName: '' },
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -201,13 +197,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
     });
 
     it('returns 400 when photoName is whitespace only', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database
+      });
+
       const event = {
         params: { photoName: '   ' },
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -243,13 +238,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'my photo.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -285,13 +279,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'café.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -312,13 +305,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
     });
 
     it('returns 500 when database binding is not available', async () => {
+      Object.assign(env, {
+        // No PCHRON_DB
+      });
+
       const event = {
         params: { photoName: 'test.jpg' },
-        platform: {
-          env: {
-            // No PCHRON_DB
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -338,29 +330,6 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
       expect(json.error).toBe('Configuration error');
     });
 
-    it('returns 500 when platform is not available', async () => {
-      const event = {
-        params: { photoName: 'test.jpg' },
-        platform: undefined,
-        locals: {
-          adminAuth: {
-            username: 'johndoe',
-            identity: {
-              type: 'service_token' as const,
-              clientId: 'client-123'
-            }
-          }
-        }
-      } as unknown as Parameters<RequestHandler>[0];
-
-      const response = await GET(event);
-      const json = (await response.json()) as LookupResponse;
-
-      expect(response.status).toBe(500);
-      expect(json.success).toBe(false);
-      expect(json.error).toBe('Platform not available');
-    });
-
     it('returns 500 when database query throws error', async () => {
       const mockD1 = {
         prepare: vi.fn(() => ({
@@ -370,13 +339,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'test.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -417,13 +385,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: 'vacation.jpg' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe', // This should be used
@@ -464,13 +431,12 @@ describe('admin/api/images/by-name/[photoName]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1
+      });
+
       const event = {
         params: { photoName: '  vacation.jpg  ' }, // Leading and trailing spaces
-        platform: {
-          env: {
-            PCHRON_DB: mockD1
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',

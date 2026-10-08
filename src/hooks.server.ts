@@ -1,8 +1,8 @@
-import type { Handle } from '@sveltejs/kit';
-import { sequence } from '@sveltejs/kit/hooks';
 import { error } from '@sveltejs/kit';
-import { getConfigFromKV, getUsernameFromDomain } from '$lib/config';
-import { extractAndValidateIdentity, checkAuthorization } from '$lib/auth';
+import { env } from 'cloudflare:workers';
+import { sequence, type Handle } from '@sveltejs/kit/hooks';
+import { getConfigFromKV, getUsernameFromDomain } from '#lib/config.js';
+import { extractAndValidateIdentity, checkAuthorization } from '#lib/auth.js';
 
 // Admin authentication handle
 export const handleAdminAuth: Handle = async ({ event, resolve }) => {
@@ -11,13 +11,13 @@ export const handleAdminAuth: Handle = async ({ event, resolve }) => {
     return resolve(event);
   }
 
-  // Verify platform environment
-  if (!event.platform?.env?.PCHRON_KV) {
-    console.error('[Admin Auth] Platform environment not available');
+  // Verify KV binding
+  if (!env.PCHRON_KV) {
+    console.error('[Admin Auth] PCHRON_KV binding not available');
     throw error(500, 'Configuration error');
   }
 
-  const { PCHRON_KV, CF_ACCESS_TEAM_DOMAIN, DEV_USER, DEV_CLIENT_ID } = event.platform.env;
+  const { PCHRON_KV, CF_ACCESS_TEAM_DOMAIN, DEV_USER, DEV_CLIENT_ID } = env;
 
   if (!CF_ACCESS_TEAM_DOMAIN) {
     console.error('[Admin Auth] CF_ACCESS_TEAM_DOMAIN not configured');
@@ -70,7 +70,7 @@ export const handleAdminAuth: Handle = async ({ event, resolve }) => {
 
 // Favicon redirect handle
 export const handleFavicon: Handle = async ({ event, resolve }) => {
-  const { url, platform } = event;
+  const { url } = event;
 
   const faviconMatch = url.pathname.match(
     /^\/(favicon-(\d+)x\d+\.png|apple-touch-icon\.png|favicon\.ico)$/
@@ -78,15 +78,11 @@ export const handleFavicon: Handle = async ({ event, resolve }) => {
 
   if (faviconMatch) {
     try {
-      if (!platform?.env?.PCHRON_KV) {
+      if (!env.PCHRON_KV) {
         throw new Error('KV namespace not available');
       }
 
-      const kvConfig = await getConfigFromKV(
-        platform.env.PCHRON_KV,
-        url.hostname,
-        platform.env.DEV_USER
-      );
+      const kvConfig = await getConfigFromKV(env.PCHRON_KV, url.hostname, env.DEV_USER);
       const { global, user } = kvConfig;
 
       let variant: string;
