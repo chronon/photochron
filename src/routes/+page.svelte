@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { PageServerData } from './$types';
-  import InfiniteScroll from '$lib/InfiniteScroll.svelte';
+  import InfiniteScroll from '#lib/InfiniteScroll.svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { onDestroy } from 'svelte';
 

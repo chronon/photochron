@@ -1,22 +1,19 @@
+import { env } from 'cloudflare:workers';
 import type { LayoutServerLoad } from './$types';
-import { getConfigFromKV } from '$lib/config';
+import { getConfigFromKV } from '#lib/config.js';
 
 const PAGE_SIZE = 15;
 
-export const load: LayoutServerLoad = async ({ url, platform }) => {
-  if (!platform?.env?.PCHRON_KV) {
+export const load: LayoutServerLoad = async ({ url }) => {
+  if (!env.PCHRON_KV) {
     throw new Error('KV namespace not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
-  if (!platform?.env?.PCHRON_DB) {
+  if (!env.PCHRON_DB) {
     throw new Error('D1 database not available. Please run with `wrangler dev` or `pnpm dev`.');
   }
 
-  const kvConfig = await getConfigFromKV(
-    platform.env.PCHRON_KV,
-    url.hostname,
-    platform.env.DEV_USER
-  );
+  const kvConfig = await getConfigFromKV(env.PCHRON_KV, url.hostname, env.DEV_USER);
   const { global, user, username } = kvConfig;
 
   let images: Array<{
@@ -29,7 +26,7 @@ export const load: LayoutServerLoad = async ({ url, platform }) => {
   let hasMore: boolean;
 
   try {
-    const result = await platform.env.PCHRON_DB.prepare(
+    const result = await env.PCHRON_DB.prepare(
       'SELECT * FROM images WHERE username = ? ORDER BY captured DESC, id DESC LIMIT ?'
     )
       .bind(username, PAGE_SIZE + 1)

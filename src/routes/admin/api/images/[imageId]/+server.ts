@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
-import { json } from '@sveltejs/kit';
-import { createErrorResponse, validateAuth, validatePlatformEnv } from '$lib/admin-utils';
+import { createErrorResponse, validateAuth, validatePlatformEnv } from '#lib/admin-utils.js';
 
 interface ImageRecord {
   id: string;
@@ -17,7 +16,7 @@ interface CloudflareImagesDeleteResponse {
 
 const LOG_PREFIX = '[Delete]';
 
-export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
+export const DELETE: RequestHandler = async ({ params, locals }) => {
   // Validate authentication
   const authResult = validateAuth(locals, LOG_PREFIX);
   if (!authResult.valid) return authResult.response;
@@ -35,7 +34,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
   }
 
   // Validate platform environment
-  const envResult = validatePlatformEnv(platform, LOG_PREFIX, ['CF_ACCOUNT_ID', 'CF_IMAGES_TOKEN']);
+  const envResult = validatePlatformEnv(LOG_PREFIX, ['CF_ACCOUNT_ID', 'CF_IMAGES_TOKEN']);
   if (!envResult.valid) return envResult.response;
   const { db, env } = envResult;
   const { CF_ACCOUNT_ID, CF_IMAGES_TOKEN } = env;
@@ -135,7 +134,7 @@ export const DELETE: RequestHandler = async ({ params, platform, locals }) => {
     }
 
     // Return success response
-    return json(
+    return Response.json(
       {
         success: true,
         id: imageId,

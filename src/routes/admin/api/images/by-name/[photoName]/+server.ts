@@ -1,6 +1,5 @@
 import type { RequestHandler } from './$types';
-import { json } from '@sveltejs/kit';
-import { createErrorResponse, validateAuth, validatePlatformEnv } from '$lib/admin-utils';
+import { createErrorResponse, validateAuth, validatePlatformEnv } from '#lib/admin-utils.js';
 
 interface ImageRecord {
   id: string;
@@ -11,7 +10,7 @@ interface ImageRecord {
 
 const LOG_PREFIX = '[Lookup]';
 
-export const GET: RequestHandler = async ({ params, platform, locals }) => {
+export const GET: RequestHandler = async ({ params, locals }) => {
   // Validate authentication
   const authResult = validateAuth(locals, LOG_PREFIX);
   if (!authResult.valid) return authResult.response;
@@ -37,7 +36,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
   }
 
   // Validate platform environment
-  const envResult = validatePlatformEnv(platform, LOG_PREFIX);
+  const envResult = validatePlatformEnv(LOG_PREFIX);
   if (!envResult.valid) return envResult.response;
   const { db } = envResult;
 
@@ -65,7 +64,7 @@ export const GET: RequestHandler = async ({ params, platform, locals }) => {
     );
 
     // Return image metadata
-    return json(
+    return Response.json(
       {
         success: true,
         id: result.id,

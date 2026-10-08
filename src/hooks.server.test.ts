@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { handleAdminAuth, handleFavicon } from './hooks.server';
 import type { RequestEvent } from '@sveltejs/kit';
 
@@ -23,7 +24,14 @@ describe('hooks.server', () => {
         })
       }) as unknown as KVNamespace;
 
-    const createEvent = (overrides: Partial<RequestEvent> = {}): RequestEvent => {
+    const createEvent = (
+      overrides: Partial<RequestEvent> = {},
+      envValues: Partial<Cloudflare.Env> = {
+        PCHRON_KV: createKV(),
+        CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com'
+      }
+    ): RequestEvent => {
+      Object.assign(env, envValues);
       const event = {
         request: new Request(baseUrl, {
           headers: {
@@ -31,12 +39,6 @@ describe('hooks.server', () => {
           }
         }),
         url: new URL(baseUrl),
-        platform: {
-          env: {
-            PCHRON_KV: createKV(),
-            CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com'
-          }
-        },
         locals: {}
       } as unknown as RequestEvent;
 
@@ -78,13 +80,7 @@ describe('hooks.server', () => {
     });
 
     it('throws 500 when CF_ACCESS_TEAM_DOMAIN is missing', async () => {
-      const event = createEvent({
-        platform: {
-          env: {
-            PCHRON_KV: createKV()
-          }
-        } as unknown as RequestEvent['platform']
-      });
+      const event = createEvent({}, { PCHRON_KV: createKV() });
 
       const resolve = vi.fn();
 
@@ -102,14 +98,10 @@ describe('hooks.server', () => {
         get: vi.fn(() => Promise.resolve(null))
       } as unknown as KVNamespace;
 
-      const event = createEvent({
-        platform: {
-          env: {
-            PCHRON_KV: kv,
-            CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com'
-          }
-        } as unknown as RequestEvent['platform']
-      });
+      const event = createEvent(
+        {},
+        { PCHRON_KV: kv, CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com' }
+      );
 
       const resolve = vi.fn();
 
@@ -123,15 +115,7 @@ describe('hooks.server', () => {
     });
 
     it('throws 401 when authentication headers are missing', async () => {
-      const event = createEvent({
-        request: new Request(baseUrl),
-        platform: {
-          env: {
-            PCHRON_KV: createKV(),
-            CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com'
-          }
-        } as unknown as RequestEvent['platform']
-      });
+      const event = createEvent({ request: new Request(baseUrl) });
 
       const resolve = vi.fn();
 
@@ -146,14 +130,10 @@ describe('hooks.server', () => {
 
     it('throws 403 when client ID is not authorized', async () => {
       const unauthorizedKV = createKV(['other-client']);
-      const event = createEvent({
-        platform: {
-          env: {
-            PCHRON_KV: unauthorizedKV,
-            CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com'
-          }
-        } as unknown as RequestEvent['platform']
-      });
+      const event = createEvent(
+        {},
+        { PCHRON_KV: unauthorizedKV, CF_ACCESS_TEAM_DOMAIN: 'https://team.cloudflareaccess.com' }
+      );
 
       const resolve = vi.fn();
 
@@ -168,20 +148,16 @@ describe('hooks.server', () => {
 
     it('supports development bypass when issuer is dev', async () => {
       const kv = createKV();
-      const event = createEvent({
-        request: new Request(baseUrl, {
-          headers: {
-            'X-Dev-Client-Id': 'dev-client'
-          }
-        }),
-        platform: {
-          env: {
-            PCHRON_KV: kv,
-            CF_ACCESS_TEAM_DOMAIN: 'dev',
-            DEV_CLIENT_ID: 'dev-client'
-          }
-        } as unknown as RequestEvent['platform']
-      });
+      const event = createEvent(
+        {
+          request: new Request(baseUrl, {
+            headers: {
+              'X-Dev-Client-Id': 'dev-client'
+            }
+          })
+        },
+        { PCHRON_KV: kv, CF_ACCESS_TEAM_DOMAIN: 'dev', DEV_CLIENT_ID: 'dev-client' }
+      );
 
       const resolve = vi.fn(async () => new Response('OK'));
 
@@ -225,13 +201,10 @@ describe('hooks.server', () => {
         })
       } as unknown as KVNamespace;
 
+      Object.assign(env, { PCHRON_KV: mockKV });
+
       const event = {
-        url: new URL('https://johndoe.com/favicon.ico'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        }
+        url: new URL('https://johndoe.com/favicon.ico')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -270,13 +243,10 @@ describe('hooks.server', () => {
         })
       } as unknown as KVNamespace;
 
+      Object.assign(env, { PCHRON_KV: mockKV });
+
       const event = {
-        url: new URL('https://johndoe.com/favicon-16x16.png'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        }
+        url: new URL('https://johndoe.com/favicon-16x16.png')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -313,13 +283,10 @@ describe('hooks.server', () => {
         })
       } as unknown as KVNamespace;
 
+      Object.assign(env, { PCHRON_KV: mockKV });
+
       const event = {
-        url: new URL('https://johndoe.com/favicon-32x32.png'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        }
+        url: new URL('https://johndoe.com/favicon-32x32.png')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -356,13 +323,10 @@ describe('hooks.server', () => {
         })
       } as unknown as KVNamespace;
 
+      Object.assign(env, { PCHRON_KV: mockKV });
+
       const event = {
-        url: new URL('https://johndoe.com/apple-touch-icon.png'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        }
+        url: new URL('https://johndoe.com/apple-touch-icon.png')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -374,10 +338,7 @@ describe('hooks.server', () => {
 
     it('falls back to static file when KV is unavailable', async () => {
       const event = {
-        url: new URL('https://johndoe.com/favicon.ico'),
-        platform: {
-          env: {}
-        }
+        url: new URL('https://johndoe.com/favicon.ico')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -393,13 +354,10 @@ describe('hooks.server', () => {
         get: vi.fn(() => Promise.reject(new Error('KV error')))
       } as unknown as KVNamespace;
 
+      Object.assign(env, { PCHRON_KV: mockKV });
+
       const event = {
-        url: new URL('https://johndoe.com/apple-touch-icon.png'),
-        platform: {
-          env: {
-            PCHRON_KV: mockKV
-          }
-        }
+        url: new URL('https://johndoe.com/apple-touch-icon.png')
       } as RequestEvent;
 
       const resolve = vi.fn();
@@ -411,8 +369,7 @@ describe('hooks.server', () => {
 
     it('does not intercept non-favicon requests', async () => {
       const event = {
-        url: new URL('https://johndoe.com/some-page'),
-        platform: { env: {} }
+        url: new URL('https://johndoe.com/some-page')
       } as RequestEvent;
 
       const mockResponse = new Response('OK');

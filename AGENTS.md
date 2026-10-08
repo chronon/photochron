@@ -33,7 +33,7 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - Write Vitest tests next to source files as `*.test.ts`
 - Use `describe/it` structure for test organization
 - Test both happy paths and error cases, especially for domain routing, auth, and config helpers
-- Mock Cloudflare bindings inline in each test file: `vi.fn()` stubs cast to `KVNamespace`/`D1Database` and passed via `platform.env`
+- Mock Cloudflare bindings with `vi.fn()` stubs cast to `KVNamespace`/`D1Database`, assigned onto `env` from `cloudflare:workers` (`Object.assign(env, {...})`). In tests that import resolves to `src/test/cloudflare-workers.ts`, and `src/test/setup.ts` empties it before each test
 - New handlers should have request/response coverage before committing
 
 ### Security
@@ -65,7 +65,7 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - **Admin Utils Module** (`src/lib/admin-utils.ts`) - Shared validation and error handling for admin endpoints
 - **Hooks Server** (`src/hooks.server.ts`) - Admin authentication with domain lookup; intercepts favicon requests
 - **Auth Module** (`src/lib/auth.ts`) - Authentication and authorization functions
-- **Types** (`src/app.d.ts`) - Type definitions for `event.locals.adminAuth`
+- **Types** (`src/app.d.ts`) - Type definitions for `event.locals.adminAuth` and the Worker bindings (`Cloudflare.Env`)
 
 ## Implementation Notes
 
@@ -125,7 +125,7 @@ Variants are account-level in Cloudflare Images, so they apply to every avatar a
 
 ## Technology Stack
 
-- SvelteKit 2.x with TypeScript and Svelte 5
+- SvelteKit 3.x with TypeScript and Svelte 5
 - Tailwind CSS 4.x with Vite plugin
 - Vitest for unit testing
 - Cloudflare Workers deployment target with adapter-cloudflare

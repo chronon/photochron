@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { env } from 'cloudflare:workers';
 import { DELETE } from './+server';
 import type { RequestHandler } from './$types';
 
@@ -48,15 +49,14 @@ describe('admin/api/images/[imageId]/+server', () => {
         })
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         params: { imageId: 'img-123' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -99,15 +99,14 @@ describe('admin/api/images/[imageId]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         params: { imageId: 'nonexistent' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -148,15 +147,14 @@ describe('admin/api/images/[imageId]/+server', () => {
         }))
       } as unknown as D1Database;
 
+      Object.assign(env, {
+        PCHRON_DB: mockD1,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         params: { imageId: 'img-123' },
-        platform: {
-          env: {
-            PCHRON_DB: mockD1,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',
@@ -177,15 +175,14 @@ describe('admin/api/images/[imageId]/+server', () => {
     });
 
     it('returns 401 when request is not authenticated', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         params: { imageId: 'img-123' },
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {} // No adminAuth
       } as unknown as Parameters<RequestHandler>[0];
 
@@ -198,15 +195,14 @@ describe('admin/api/images/[imageId]/+server', () => {
     });
 
     it('returns 400 when imageId is empty', async () => {
+      Object.assign(env, {
+        PCHRON_DB: {} as D1Database,
+        CF_ACCOUNT_ID: 'account-123',
+        CF_IMAGES_TOKEN: 'token-123'
+      });
+
       const event = {
         params: { imageId: '' },
-        platform: {
-          env: {
-            PCHRON_DB: {} as D1Database,
-            CF_ACCOUNT_ID: 'account-123',
-            CF_IMAGES_TOKEN: 'token-123'
-          }
-        },
         locals: {
           adminAuth: {
             username: 'johndoe',

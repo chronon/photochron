@@ -157,7 +157,10 @@ All admin endpoints use Cloudflare Access authentication with service tokens:
 Headers:
   CF-Access-Client-Id: your-service-token-client-id
   CF-Access-Client-Secret: your-service-token-client-secret
+  Origin: https://your-domain.com
 ```
+
+Send an `Origin` header matching the domain on upload and delete requests; without it SvelteKit's CSRF protection returns 403.
 
 **Upload** - `POST /admin/api/images`
 
