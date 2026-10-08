@@ -33,7 +33,7 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - Write Vitest tests next to source files as `*.test.ts`
 - Use `describe/it` structure for test organization
 - Test both happy paths and error cases, especially for domain routing, auth, and config helpers
-- Mock Cloudflare bindings using helpers in `vitest-setup-client.ts`
+- Mock Cloudflare bindings inline in each test file: `vi.fn()` stubs cast to `KVNamespace`/`D1Database` and passed via `platform.env`
 - New handlers should have request/response coverage before committing
 
 ### Security
