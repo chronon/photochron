@@ -170,6 +170,8 @@ Request body: `file` (image file), `metadata` (JSON with name, caption, captured
 
 Response: `{ success: true, id, filename, uploaded }`
 
+Size limits: JPEG, PNG, WebP, and HEIC files up to 20 MB; GIF and SVG up to 10 MB. Files over 10 MB are downscaled to fit within 4096px and stored as JPEG, since Cloudflare Images storage caps uploads at 10 MB; `filename` then ends in `.jpg` and PNG/WebP transparency is lost.
+
 **Lookup** - `GET /admin/api/images/by-name/{photoName}`
 
 Find image ID by photo name (case-insensitive). Returns most recent if multiple matches exist.
