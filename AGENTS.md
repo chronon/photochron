@@ -56,7 +56,7 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - **Layout Server Load** (`src/routes/+layout.server.ts`) - Looks up username from domain mapping in KV, loads user config from KV, fetches images from D1
 - **Page Server Load** (`src/routes/+page.server.ts`) - Passes images data from parent layout
 - **Main Gallery** (`src/routes/+page.svelte`) - Displays images with user info and infinite scroll
-- **Upload Endpoint** (`src/routes/admin/api/images/+server.ts`) - Validates, uploads to Cloudflare Images, inserts to D1
+- **Upload Endpoint** (`src/routes/admin/api/images/+server.ts`) - Validates, downscales oversized files via the Images binding, uploads to Cloudflare Images, inserts to D1
 - **Lookup Endpoint** (`src/routes/admin/api/images/by-name/[photoName]/+server.ts`) - Finds image ID by photo name, case-insensitive
 - **Delete Endpoint** (`src/routes/admin/api/images/[imageId]/+server.ts`) - Verifies ownership, deletes from D1 and Cloudflare Images
 - **Images API** (`src/routes/api/images/+server.ts`) - Paginated images from D1 for infinite scroll
@@ -116,6 +116,16 @@ SELECT id, name, captured, uploaded FROM images
 ```
 
 The client passes the last image's `captured` and `id` as the cursor, so the index seeks directly instead of skipping rows with `OFFSET`. Preserve this when changing pagination.
+
+### Upload Resizing
+
+The size limits are listed under README → Admin API. How the upload endpoint enforces them:
+
+- Thresholds are decimal (`1_000_000` bytes per MB) because Cloudflare documents its Images limits in MB without saying decimal or MiB. Using decimal keeps us under the cap on either reading.
+- The resize runs after metadata validation. Each binding call is a billed transformation, so a malformed request must not trigger one.
+- `env.IMAGES` is checked only when a resize is needed, so uploads under 10 MB don't depend on the binding.
+- Binding failures are `ImagesError`s, detected by their numeric `code`. Workers types declare only an interface, so `instanceof` can't be used. Code 9412 (not an image) maps to 400.
+- The local emulator (Miniflare, sharp-based) doesn't apply EXIF rotation and may not decode HEIC. Check orientation and HEIC handling against production only.
 
 ### Dynamic Favicons
 

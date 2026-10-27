@@ -10,6 +10,9 @@
     "binding": "ASSETS",
     "directory": ".svelte-kit/cloudflare"
   },
+  "images": {
+    "binding": "IMAGES"
+  },
   "observability": {
     "enabled": true
   },
@@ -17,7 +20,7 @@
     "mode": "smart"
   },
   "limits": {
-    "cpu_ms": 50,
+    "cpu_ms": 1000,
     "subrequests": 10
   },
   "routes": []

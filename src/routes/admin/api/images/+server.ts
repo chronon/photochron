@@ -21,8 +21,14 @@ interface CloudflareImagesUploadResponse {
 }
 
 const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'] as const;
-const MAX_FILE_SIZE_MB = 10;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+const RESIZABLE_EXTENSIONS: readonly string[] = ['jpg', 'jpeg', 'png', 'webp', 'heic'];
+const BYTES_PER_MB = 1_000_000;
+const MAX_FILE_SIZE_MB = 20;
+const MAX_STORED_SIZE_MB = 10;
+const MAX_STORED_SIZE_BYTES = MAX_STORED_SIZE_MB * BYTES_PER_MB;
+const RESIZE_MAX_DIMENSION = 4096;
+const RESIZE_QUALITY = 90;
+const IMAGES_ERROR_NOT_AN_IMAGE = 9412;
 const LOG_PREFIX = '[Upload]';
 
 function validateMetadata(
@@ -67,7 +73,13 @@ function validateMetadata(
   };
 }
 
-function validateFile(file: File): { valid: true } | { valid: false; error: string } {
+function formatMB(bytes: number): string {
+  return (bytes / BYTES_PER_MB).toFixed(2);
+}
+
+function validateFile(
+  file: File
+): { valid: true; needsResize: boolean } | { valid: false; error: string } {
   const extension = file.name.split('.').pop()?.toLowerCase();
 
   if (
@@ -80,14 +92,52 @@ function validateFile(file: File): { valid: true } | { valid: false; error: stri
     };
   }
 
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  const maxSizeMB = RESIZABLE_EXTENSIONS.includes(extension)
+    ? MAX_FILE_SIZE_MB
+    : MAX_STORED_SIZE_MB;
+
+  if (file.size > maxSizeMB * BYTES_PER_MB) {
     return {
       valid: false,
-      error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)} MB. Maximum: ${MAX_FILE_SIZE_MB} MB`
+      error: `File too large: ${formatMB(file.size)} MB. Maximum: ${maxSizeMB} MB`
     };
   }
 
-  return { valid: true };
+  return { valid: true, needsResize: file.size > MAX_STORED_SIZE_BYTES };
+}
+
+async function resizeImage(
+  images: ImagesBinding,
+  file: File
+): Promise<{ success: true; file: File } | { success: false; error: string; status: number }> {
+  try {
+    const result = await images
+      .input(file.stream())
+      .transform({
+        width: RESIZE_MAX_DIMENSION,
+        height: RESIZE_MAX_DIMENSION,
+        fit: 'scale-down'
+      })
+      .output({ format: 'image/jpeg', quality: RESIZE_QUALITY });
+    const resized = await new Response(result.image()).blob();
+    const baseName = file.name.replace(/\.[^.]+$/, '');
+
+    console.log(
+      `${LOG_PREFIX} Resized ${file.name} from ${formatMB(file.size)} MB to ${formatMB(resized.size)} MB`
+    );
+
+    return {
+      success: true,
+      file: new File([resized], `${baseName}.jpg`, { type: 'image/jpeg' })
+    };
+  } catch (error) {
+    const code = (error as { code?: unknown }).code;
+    console.error(`${LOG_PREFIX} Images binding error (code ${code}):`, error);
+    if (code === IMAGES_ERROR_NOT_AN_IMAGE) {
+      return { success: false, error: 'Invalid image file', status: 400 };
+    }
+    return { success: false, error: 'Failed to process image', status: 500 };
+  }
 }
 
 async function uploadToCloudflareImages(
@@ -235,7 +285,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
 
   console.log(
-    `${LOG_PREFIX} Received file: ${file.name} (${file.type}, ${(file.size / 1024 / 1024).toFixed(2)} MB)`
+    `${LOG_PREFIX} Received file: ${file.name} (${file.type}, ${formatMB(file.size)} MB)`
   );
 
   // Extract and validate metadata
@@ -254,10 +304,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     `${LOG_PREFIX} Metadata validated: name=${metadata.name}, captured=${metadata.captured}`
   );
 
+  // Downscale files too large for Cloudflare Images storage
+  let uploadFile = file;
+  if (fileValidation.needsResize) {
+    const images = env.IMAGES as ImagesBinding | undefined;
+    if (!images) {
+      return createErrorResponse(LOG_PREFIX, 'Configuration error', 500, 'Missing IMAGES binding');
+    }
+
+    const resizeResult = await resizeImage(images, file);
+    if (!resizeResult.success) {
+      return createErrorResponse(LOG_PREFIX, resizeResult.error, resizeResult.status);
+    }
+    uploadFile = resizeResult.file;
+  }
+
   // Upload to Cloudflare Images
   const uploadedTimestamp = new Date().toISOString();
   const uploadResult = await uploadToCloudflareImages(
-    file,
+    uploadFile,
     username,
     metadata,
     uploadedTimestamp,

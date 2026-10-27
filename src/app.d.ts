@@ -15,6 +15,7 @@ declare global {
     interface Env {
       PCHRON_KV: KVNamespace;
       PCHRON_DB: D1Database;
+      IMAGES: ImagesBinding;
       CF_ACCOUNT_ID: string;
       CF_IMAGES_TOKEN: string;
       CF_ACCESS_TEAM_DOMAIN: string;
