@@ -387,7 +387,7 @@ describe('admin/api/images/+server', () => {
         const json = (await response.json()) as UploadResponse;
 
         expect(response.status).toBe(400);
-        expect(json.error).toBe('File too large: 10.00 MB. Maximum: 10 MB');
+        expect(json.error).toBe('File too large: 10.01 MB. Maximum: 10 MB');
         expect(input).not.toHaveBeenCalled();
       });
 

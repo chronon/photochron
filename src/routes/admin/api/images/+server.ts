@@ -74,7 +74,7 @@ function validateMetadata(
 }
 
 function formatMB(bytes: number): string {
-  return (bytes / BYTES_PER_MB).toFixed(2);
+  return (Math.ceil(bytes / (BYTES_PER_MB / 100)) / 100).toFixed(2);
 }
 
 function validateFile(
@@ -131,7 +131,7 @@ async function resizeImage(
       file: new File([resized], `${baseName}.jpg`, { type: 'image/jpeg' })
     };
   } catch (error) {
-    const code = (error as { code?: unknown }).code;
+    const code = (error as { code?: unknown } | null)?.code;
     console.error(`${LOG_PREFIX} Images binding error (code ${code}):`, error);
     if (code === IMAGES_ERROR_NOT_AN_IMAGE) {
       return { success: false, error: 'Invalid image file', status: 400 };
@@ -156,7 +156,7 @@ async function uploadToCloudflareImages(
   const safeName = metadata.name.replace(/[^a-zA-Z0-9_-]/g, '_');
   const customFilename = `${username}_${safeName}.${extension}`;
 
-  const renamedFile = new File([await file.arrayBuffer()], customFilename, { type: file.type });
+  const renamedFile = new File([file], customFilename, { type: file.type });
 
   const augmentedMetadata = {
     ...metadata,
