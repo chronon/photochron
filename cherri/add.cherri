@@ -1,0 +1,73 @@
+#include 'actions/web'
+#include 'actions/documents'
+#include 'actions/images'
+#include 'actions/calendar'
+#include 'actions/sharing'
+#include 'actions/text'
+#define color teal
+#define from sharesheet
+#define inputs image
+#define noinput stopwith "Share a photo to add it to Photochron."
+
+#include 'version.cherri'
+#include 'config.cherri'
+
+@uploaded = 0
+@failures = []
+
+for photo in ShortcutInput {
+	@current = photo
+	const name = getImageDetail(@current, "Name")
+	@taken = getImageDetail(@current, "Date Taken")
+	if !@taken {
+		@taken = getImageDetail(@current, "Creation Date")
+	}
+	const captured = rawAction("is.workflow.actions.format.date", {
+		"WFDate": "{@taken}",
+		"WFDateFormatStyle": "ISO 8601",
+		"WFISO8601IncludeTime": true
+	})
+
+	show(@current)
+	const caption = prompt("Add a caption to {name}?", nil, nil, false)
+
+	@metadata = {
+		"name": "{name}",
+		"caption": "{caption}",
+		"captured": "{captured}"
+	}
+
+	const response = formRequest("{@domain}/admin/api/images", "POST", {
+		"file": @current,
+		"metadata": "{@metadata}"
+	}, {
+		"CF-Access-Client-Id": "{clientId}",
+		"CF-Access-Client-Secret": "{clientSecret}",
+		"Origin": "{@domain}"
+	})
+	const result = getDictionary(response)
+	const success = getValue(result, "success")
+	const error = getValue(result, "error")
+
+	if error {
+		@failures += "{name}: {error}"
+	} else {
+		if success {
+			@uploaded += 1
+		} else {
+			confirm("{@uploaded} uploaded so far. Photochron rejected {name} or isn't responding. If you were sent a new setup code, clear the saved setup so you can paste it?", "Photochron Add ({version})")
+			const savedConfig = getFile("photochron.json", nil, false)
+			deleteFiles(savedConfig, true)
+			alert("Setup cleared. Copy your new setup code, then share the photo again.", "Photochron Add ({version})")
+			stop()
+		}
+	}
+}
+
+const failureCount = count(@failures)
+if failureCount == 0 {
+	alert("{@uploaded} uploaded.", "Photochron Add ({version})")
+} else {
+	const failureList = joinText(@failures)
+	alert("{@uploaded} uploaded, failed:\n{failureList}", "Photochron Add ({version})")
+}

@@ -54,6 +54,7 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - `src/` - SvelteKit application (routes as `+server.ts`, components and utilities in `lib/`)
 - `config/` - JSONC deployment configuration (`app.jsonc` is source of truth, gitignored)
 - `scripts/` - Config automation tools (build and deployment scripts)
+- `cherri/` - Apple Shortcuts clients written in Cherri, with build and setup-code scripts
 - `migrations/` - Cloudflare D1 schema files (run via Wrangler)
 - `static/` - Public assets and favicon fallbacks
 - `.dev.vars` - Local development secrets (gitignored)
@@ -139,6 +140,17 @@ The size limits are listed under README → Admin API. How the upload endpoint e
 `src/hooks.server.ts` intercepts `/favicon.ico`, `/favicon-16x16.png`, `/favicon-32x32.png`, and `/apple-touch-icon.png`, loads the user's avatar ID from KV, and issues a 302 to the corresponding Cloudflare Images variant (`favicon16`, `favicon32`, `apple180`) with a 1-hour cache header. If the KV fetch fails it falls back to the `fallback-*` files in `/static/`.
 
 Variants are account-level in Cloudflare Images, so they apply to every avatar automatically — there is no per-user variant setup.
+
+### Shortcut Clients
+
+`cherri/add.cherri` and `cherri/delete.cherri` both include `config.cherri` (credential loading and setup) and `version.cherri`, which `build.sh` generates from `git describe` for alert titles.
+
+- **Cherri is pinned to an unreleased `main` commit** because sending a form field as a file landed after v2.4.0. `main` still reports v2.4.0, so `build.sh` uses `~/go/bin/cherri` rather than `PATH`. Re-test on a device after changing the pin.
+- **Compile with `--skip-sign` and sign with macOS `shortcuts sign`**, as `build.sh` does. Otherwise Cherri can fall back to a remote signing service. Signed output goes outside the repo.
+- **`photochron.json` keeps the original Shortcuts' format**: `domain` (a full origin), `CF-Access-Client-Id`, and `CF-Access-Client-Secret`. A setup code is `photochron:` plus that JSON in base64. Changing it breaks installed copies.
+- **Auth failure is a response with neither `success` nor `error`**, since an Access rejection returns HTML. API errors must keep returning an `error` string, or the Shortcuts will offer to clear valid credentials.
+- **`captured` uses the built-in ISO 8601 style with time**, via `rawAction` since `formatDate` can't include the time. It must match existing rows because the gallery sorts it as a string.
+- Use nested `if`/`else` rather than `else if`, which older Shortcuts versions may not support.
 
 ## Technology Stack
 

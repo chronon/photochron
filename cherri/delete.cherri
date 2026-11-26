@@ -1,0 +1,73 @@
+#include 'actions/web'
+#include 'actions/documents'
+#include 'actions/images'
+#include 'actions/calendar'
+#include 'actions/sharing'
+#include 'actions/text'
+#define color red
+#define from sharesheet
+#define inputs image
+#define noinput stopwith "Share a photo to delete it from Photochron."
+
+#include 'version.cherri'
+#include 'config.cherri'
+
+const photoCount = count(ShortcutInput)
+if photoCount > 1 {
+	alert("Share one photo at a time to delete.", "Photochron Delete ({version})")
+	stop()
+}
+
+const name = getImageDetail(ShortcutInput, "Name")
+const encodedName = urlEncode(name)
+
+const lookupResponse = downloadURL("{@domain}/admin/api/images/by-name/{encodedName}", {
+	"CF-Access-Client-Id": "{clientId}",
+	"CF-Access-Client-Secret": "{clientSecret}",
+	"Origin": "{@domain}"
+})
+const lookup = getDictionary(lookupResponse)
+const lookupError = getValue(lookup, "error")
+const id = getValue(lookup, "id")
+
+if lookupError {
+	alert("{name} wasn't found in Photochron: {lookupError}", "Photochron Delete ({version})")
+	stop()
+}
+if !id {
+	confirm("Photochron rejected the request or isn't responding. If you were sent a new setup code, clear the saved setup so you can paste it?", "Photochron Delete ({version})")
+	const savedConfig = getFile("photochron.json", nil, false)
+	deleteFiles(savedConfig, true)
+	alert("Setup cleared. Copy your new setup code, then share the photo again.", "Photochron Delete ({version})")
+	stop()
+}
+
+const capturedText = getValue(lookup, "captured")
+const uploadedText = getValue(lookup, "uploaded")
+const captured = formatDate("{capturedText}", "Medium")
+const uploaded = formatDate("{uploadedText}", "Medium")
+confirm("Delete {name}?\nTaken {captured}\nUploaded {uploaded}", "Photochron Delete ({version})")
+
+const deleteResponse = jsonRequest("{@domain}/admin/api/images/{id}", "DELETE", nil, {
+	"CF-Access-Client-Id": "{clientId}",
+	"CF-Access-Client-Secret": "{clientSecret}",
+	"Origin": "{@domain}"
+})
+const deleted = getDictionary(deleteResponse)
+const deleteSuccess = getValue(deleted, "success")
+const deleteError = getValue(deleted, "error")
+const warning = getValue(deleted, "warning")
+
+if deleteError {
+	alert("{name} wasn't deleted: {deleteError}", "Photochron Delete ({version})")
+} else {
+	if !deleteSuccess {
+		alert("Photochron didn't confirm deleting {name}. Check the gallery before trying again.", "Photochron Delete ({version})")
+	} else {
+		if warning {
+			alert("{name} was removed from the gallery, but: {warning}", "Photochron Delete ({version})")
+		} else {
+			alert("{name} deleted.", "Photochron Delete ({version})")
+		}
+	}
+}

@@ -36,3 +36,7 @@ config/app.kv.json
 
 # Playwright MCP
 .playwright-mcp
+
+# Cherri build output
+cherri/*.shortcut
+cherri/version.cherri
