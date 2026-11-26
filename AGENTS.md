@@ -36,6 +36,13 @@ When asked to "update docs", update whichever file owns the topic rather than bo
 - Mock Cloudflare bindings with `vi.fn()` stubs cast to `KVNamespace`/`D1Database`, assigned onto `env` from `cloudflare:workers` (`Object.assign(env, {...})`). In tests that import resolves to `src/test/cloudflare-workers.ts`, and `src/test/setup.ts` empties it before each test
 - New handlers should have request/response coverage before committing
 
+#### Browser Checks (Playwright MCP)
+
+- `pnpm dev` serves `DEV_USER` on localhost from local KV and D1. Local D1 holds every user's rows, so pick test data owned by `DEV_USER`
+- Stick to reads: the gallery, infinite scroll (`/api/images?before=…&id=…`), favicon redirects, and admin lookup by name. Uploads and deletes hit the real Cloudflare Images API, and resizes are billed
+- Auth can't be checked here: the dev bypass admits admin requests even without headers. Vitest covers auth
+- `pnpm dev` also spawns `workerd`; stop both when done
+
 ### Security
 
 - Never commit `.dev.vars` or credentials to git

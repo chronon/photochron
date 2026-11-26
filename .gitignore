@@ -33,3 +33,6 @@ vite.config.ts.timestamp-*
 config/app.jsonc
 config/app.kv.json
 .wrangler
+
+# Playwright MCP
+.playwright-mcp
