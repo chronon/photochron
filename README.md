@@ -188,10 +188,17 @@ All endpoints return errors as `{ success: false, error: string }`.
 
 ## Clients
 
-There is no admin interface, just API endpoints for add, find, and delete. For Apple devices these two shortcuts make adding and deleting photos from share sheets fast and seamless.
+There is no admin interface, just API endpoints for add, find, and delete. On Apple devices, two Shortcuts add and delete photos from the share sheet: share one or more photos to **Photochron - Add**, or a single photo to **Photochron - Delete**.
 
-- Add: https://www.icloud.com/shortcuts/d44f9cce647f4acd837f346fddeefe2f
-- Delete: https://www.icloud.com/shortcuts/ad0dc21dbab84deebbba42fe72507453
+Build signed Shortcuts on a Mac with `cherri/build.sh [output-dir]` (default `~/Downloads`), then send them to users. This needs Cherri at a pinned commit in `~/go/bin/cherri`:
+
+```bash
+nix shell nixpkgs#go --command go install github.com/electrikmilk/cherri@98d5191ae121
+```
+
+**User setup:** run `cherri/setup-code.sh` with the user's domain, client ID, and secret, and send them the code over iMessage or in person, since it is a working credential. The user copies it and shares a photo to either Shortcut, which saves the credentials to `photochron.json` in their iCloud Drive Shortcuts folder.
+
+To rotate a token, update Access and KV and send a new code. The Shortcut offers to clear the old one when it's rejected.
 
 ## Admin Authentication
 
@@ -248,7 +255,7 @@ The application uses Cloudflare KV (configuration), D1 (image metadata), Images 
 6. **Edit `config/app.jsonc`**: Add user entry with `domains` array (one or more domains), the avatar ID, and the service token client ID in `authorized_client_ids`
 7. **Deploy**: Run `pnpm run deploy` to generate config (including domain mappings), upload to KV, and deploy. If the domain's zone is in the same Cloudflare account, the `custom_domain` route provisions its DNS record automatically.
 8. **Update the `APP_JSONC` secret**: Run `gh secret set APP_JSONC < config/app.jsonc`. Since `app.jsonc` is gitignored, the next push to `main` rebuilds KV from this secret — a stale secret silently removes the new user.
-9. **Configure upload client**: Provide user with service token credentials and upload endpoint URL
+9. **Configure upload client**: Generate a setup code with `cherri/setup-code.sh` and send it with the Shortcuts (see [Clients](#clients))
 
 **How the two authorization layers differ:** the Access policy admits every listed service token on every listed domain. Per-user isolation comes from `authorized_client_ids` in KV, enforced by `handleAdminAuth` — that is what stops one user's token from managing another user's photos.
 

@@ -1,0 +1,30 @@
+#include 'actions/crypto'
+
+const configFile = getFile("photochron.json", nil, false)
+@config = getDictionary(configFile)
+@domain = getValue(@config, "domain")
+
+if !@domain {
+	const clipboard = getClipboard()
+	const clipboardText = getText(clipboard)
+	if clipboardText beginsWith "photochron:" {} else {
+		alert("Copy your setup code from Messages, then share the photo again.", "Photochron setup")
+		stop()
+	}
+	const encoded = replaceText("photochron:", "", clipboardText)
+	const decoded = base64Decode(encoded)
+	@config = getDictionary(decoded)
+	@domain = getValue(@config, "domain")
+	const setupId = getValue(@config, "CF-Access-Client-Id")
+	const setupSecret = getValue(@config, "CF-Access-Client-Secret")
+	if !@domain || !setupId || !setupSecret {
+		alert("That setup code is incomplete. Ask for a new one, copy it, then share the photo again.", "Photochron setup")
+		stop()
+	}
+	saveFile("photochron.json", @config, true)
+	const blank = text("")
+	setClipboard(blank)
+}
+
+const clientId = getValue(@config, "CF-Access-Client-Id")
+const clientSecret = getValue(@config, "CF-Access-Client-Secret")
