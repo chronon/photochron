@@ -6,6 +6,11 @@
       "headers": {
         "Authorization": "Bearer ${CLOUDFLARE_MCP_TOKEN}"
       }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "playwright-mcp",
+      "args": ["--isolated"]
     }
   }
 }
