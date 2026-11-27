@@ -67,7 +67,7 @@ if deleteError {
 		if warning {
 			alert("{name} was removed from the gallery, but: {warning}", "Photochron Delete ({version})")
 		} else {
-			alert("{name} deleted.", "Photochron Delete ({version})")
+			showNotification("{name} deleted.", "Photochron Delete ({version})", false)
 		}
 	}
 }

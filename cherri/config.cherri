@@ -24,6 +24,7 @@ if !@domain {
 	saveFile("photochron.json", @config, true)
 	const blank = text("")
 	setClipboard(blank)
+	showNotification("Photochron is set up.", "Photochron setup", false)
 }
 
 const clientId = getValue(@config, "CF-Access-Client-Id")
